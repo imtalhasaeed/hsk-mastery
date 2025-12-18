@@ -86,6 +86,31 @@
             from { width: 100%; }
             to { width: 0%; }
         }
+        
+        /* Dialogue styles */
+        .dialogue-line {
+            border-left: 3px solid #667eea;
+            padding-left: 12px;
+        }
+        .dialogue-line.speaker-b {
+            border-left-color: #10b981;
+        }
+        .dialogue-line.speaker-c {
+            border-left-color: #f59e0b;
+        }
+        .hidden-text {
+            filter: blur(5px);
+            cursor: pointer;
+            transition: filter 0.3s ease;
+            user-select: none;
+        }
+        .hidden-text:hover {
+            filter: blur(3px);
+        }
+        .hidden-text.revealed {
+            filter: blur(0);
+            cursor: default;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -346,6 +371,65 @@
             <div id="no-scores" class="hidden text-center py-6">
                 <div class="text-4xl mb-2">📝</div>
                 <p class="text-gray-600 text-sm">No scores yet. Start a quiz to track your progress!</p>
+            </div>
+        </div>
+
+        <!-- Dialogue Chapter Selection Screen -->
+        <div id="dialogue-chapter-screen" class="hidden fade-in">
+            <button onclick="showChapters()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-3 font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Chapters
+            </button>
+            <div class="text-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-1">💬 Dialogue Practice</h2>
+                <p class="text-gray-600 text-sm">Select a chapter to practice dialogues</p>
+            </div>
+            <div id="dialogue-chapter-grid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2 mb-4"></div>
+        </div>
+
+        <!-- Dialogue Selection Screen -->
+        <div id="dialogue-selection-screen" class="hidden fade-in">
+            <button onclick="showDialogueChapters()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-3 font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Chapters
+            </button>
+            <div class="text-center mb-4">
+                <h2 id="dialogue-chapter-title" class="text-xl font-bold text-gray-800 mb-1">Chapter 1 Dialogues</h2>
+                <p class="text-gray-600 text-sm">Select a dialogue to practice</p>
+            </div>
+            <div id="dialogue-list" class="grid gap-3 max-w-2xl mx-auto"></div>
+        </div>
+
+        <!-- Dialogue Practice Screen -->
+        <div id="dialogue-screen" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto">
+                <button onclick="showDialogueSelection()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-3 font-medium text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back to Dialogues
+                </button>
+                
+                <div class="bg-white rounded-xl shadow-lg p-4 mb-3">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs font-medium">HSK2 Dialogue</span>
+                        <button onclick="toggleAllTranslations()" class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-200 transition">
+                            👁️ Show/Hide All
+                        </button>
+                    </div>
+                    <h3 id="dialogue-title" class="text-lg font-bold text-gray-800 mb-4 text-center chinese-text">在学校</h3>
+                    
+                    <div id="dialogue-content" class="space-y-4">
+                        <!-- Dialogue lines will be inserted here -->
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="prevDialogue()" class="flex-1 bg-gray-200 text-gray-800 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition text-sm">
+                        ← Previous
+                    </button>
+                    <button onclick="nextDialogue()" class="flex-1 gradient-bg text-white py-2.5 rounded-xl font-semibold hover:opacity-90 transition text-sm">
+                        Next →
+                    </button>
+                </div>
             </div>
         </div>
     </main>
@@ -949,6 +1033,17 @@
                 </div>
             `;
             
+            // Add Dialogues button for HSK2
+            if (level === 'HSK2') {
+                html += `
+                    <div onclick="showDialogueChapters()" class="card-hover cursor-pointer bg-gradient-to-br from-orange-500 to-red-500 rounded-xl p-2 shadow-lg text-center text-white">
+                        <div class="text-base font-bold mb-0.5">💬</div>
+                        <p class="text-xs font-medium">Dialogues</p>
+                        <p class="text-xs text-white/70">Practice</p>
+                    </div>
+                `;
+            }
+            
             grid.innerHTML = html;
         }
 
@@ -1494,6 +1589,781 @@
             }).join('');
             
             container.innerHTML = html;
+        }
+
+        // HSK2 Dialogues Data
+        const hsk2Dialogues = {
+            1: [
+                {
+                    id: "01-1",
+                    title: "在学校 (In the school)",
+                    content: [
+                        { speaker: "A", chinese: "我要去北京旅游,你觉得什么时候去最好?", pinyin: "Wǒ yào qù Běijīng lǚyóu, nǐ juéde shénme shíhou qù zuì hǎo?", english: "I want to go to Beijing for travel. When do you think is the best time to go?" },
+                        { speaker: "B", chinese: "九月去北京旅游最好。", pinyin: "Jiǔyuè qù Běijīng lǚyóu zuì hǎo.", english: "September is the best time to visit Beijing." },
+                        { speaker: "A", chinese: "为什么?", pinyin: "Wèishéme?", english: "Why?" },
+                        { speaker: "B", chinese: "九月的北京天气不冷也不热。", pinyin: "Jiǔyuè de Běijīng tiānqì bù lěng yě bù rè.", english: "In September, Beijing's weather is neither cold nor hot." }
+                    ]
+                },
+                {
+                    id: "01-2",
+                    title: "看照片 (Looking at a picture)",
+                    content: [
+                        { speaker: "A", chinese: "你喜欢什么运动?", pinyin: "Nǐ xǐhuan shénme yùndòng?", english: "What sports do you like?" },
+                        { speaker: "B", chinese: "我最喜欢踢足球。", pinyin: "Wǒ zuì xǐhuan tī zúqiú.", english: "I like playing football the most." },
+                        { speaker: "A", chinese: "下午我们一起去踢足球吧。", pinyin: "Xiàwǔ wǒmen yìqǐ qù tī zúqiú ba.", english: "Let's go play football together this afternoon." },
+                        { speaker: "B", chinese: "好啊!", pinyin: "Hǎo a!", english: "Great!" }
+                    ]
+                },
+                {
+                    id: "01-3",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "我们要不要买几个新的椅子?", pinyin: "Wǒmen yào bú yào mǎi jǐ gè xīn de yǐzi?", english: "Should we buy a few new chairs?" },
+                        { speaker: "B", chinese: "好啊。什么时候去买?", pinyin: "Hǎo a. Shénme shíhou qù mǎi?", english: "Okay. When shall we go buy them?" },
+                        { speaker: "A", chinese: "明天下午怎么样?你明天几点能回来?", pinyin: "Míngtiān xiàwǔ zěnmeyàng? Nǐ míngtiān jǐ diǎn néng huílái?", english: "How about tomorrow afternoon? What time can you come back tomorrow?" },
+                        { speaker: "B", chinese: "三点多。", pinyin: "Sān diǎn duō.", english: "A little after three o'clock." }
+                    ]
+                },
+                {
+                    id: "01-4",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "桌子下面有个猫。", pinyin: "Zhuōzi xiàmiàn yǒu gè māo.", english: "There is a cat under the table." },
+                        { speaker: "B", chinese: "那是我的猫,它叫花花。", pinyin: "Nà shì wǒ de māo, tā jiào Huāhuā.", english: "That is my cat, it's called Huahua." },
+                        { speaker: "A", chinese: "它很漂亮。", pinyin: "Tā hěn piàoliang.", english: "It is very pretty." },
+                        { speaker: "B", chinese: "是啊,我觉得它的眼睛最漂亮。", pinyin: "Shì a, wǒ juéde tā de yǎnjing zuì piàoliang.", english: "Yes, I think its eyes are the most beautiful." },
+                        { speaker: "A", chinese: "它多大了?", pinyin: "Tā duō dà le?", english: "How old is it?" },
+                        { speaker: "B", chinese: "六个多月。", pinyin: "Liù gè duō yuè.", english: "More than six months old." }
+                    ]
+                }
+            ],
+            2: [
+                {
+                    id: "02-1",
+                    title: "在运动场 (On the playground)",
+                    content: [
+                        { speaker: "A", chinese: "你很少生病,是不是喜欢运动?", pinyin: "Nǐ hěn shǎo shēngbìng, shì bú shì xǐhuan yùndòng?", english: "You rarely get sick, do you like sports?" },
+                        { speaker: "B", chinese: "是啊,我每天早上都要出去跑步。", pinyin: "Shì a, wǒ měitiān zǎoshang dōu yào chūqù pǎobù.", english: "Yes, I go out for a run every morning." },
+                        { speaker: "A", chinese: "你每天几点起床?", pinyin: "Nǐ měitiān jǐ diǎn qǐchuáng?", english: "What time do you get up every day?" },
+                        { speaker: "B", chinese: "我每天六点起床。", pinyin: "Wǒ měitiān liù diǎn qǐchuáng.", english: "I get up at six o'clock every day." }
+                    ]
+                },
+                {
+                    id: "02-2",
+                    title: "在医院 (In the hospital)",
+                    content: [
+                        { speaker: "A", chinese: "吃药了吗?现在身体怎么样?", pinyin: "Chī yào le ma? Xiànzài shēntǐ zěnmeyàng?", english: "Did you take your medicine? How do you feel now?" },
+                        { speaker: "B", chinese: "吃了。现在好多了。", pinyin: "Chī le. Xiànzài hǎo duō le.", english: "I took it. I feel much better now." },
+                        { speaker: "A", chinese: "什么时候能出院?", pinyin: "Shénme shíhou néng chūyuàn?", english: "When can you leave the hospital?" },
+                        { speaker: "B", chinese: "医生说下个星期。", pinyin: "Yīshēng shuō xià gè xīngqī.", english: "The doctor said next week." }
+                    ]
+                },
+                {
+                    id: "02-3",
+                    title: "在运动场 (On the playground)",
+                    content: [
+                        { speaker: "A", chinese: "大卫今年多大?", pinyin: "Dàwèi jīnnián duō dà?", english: "How old is David this year?" },
+                        { speaker: "B", chinese: "二十多岁。", pinyin: "Èrshí duō suì.", english: "Over twenty years old." },
+                        { speaker: "A", chinese: "他多高?", pinyin: "Tā duō gāo?", english: "How tall is he?" },
+                        { speaker: "B", chinese: "一米八几。", pinyin: "Yī mǐ bā jǐ.", english: "Over one meter eighty." },
+                        { speaker: "A", chinese: "你怎么知道这么多啊?", pinyin: "Nǐ zěnme zhīdào zhème duō a?", english: "How do you know so much?" },
+                        { speaker: "B", chinese: "他是我的同学。", pinyin: "Tā shì wǒ de tóngxué.", english: "He is my classmate." }
+                    ]
+                },
+                {
+                    id: "02-4",
+                    title: "在房间 (In the room)",
+                    content: [
+                        { speaker: "A", chinese: "张老师星期六也不休息啊?", pinyin: "Zhāng lǎoshī Xīngqīliù yě bù xiūxi a?", english: "Teacher Zhang doesn't rest even on Saturdays?" },
+                        { speaker: "B", chinese: "是啊,他这几天很忙,没有时间休息。", pinyin: "Shì a, tā zhè jǐ tiān hěn máng, méiyǒu shíjiān xiūxi.", english: "Yes, he has been very busy these days and has no time to rest." },
+                        { speaker: "A", chinese: "那会很累吧?", pinyin: "Nà huì hěn lèi ba?", english: "That must be very tiring, right?" },
+                        { speaker: "B", chinese: "他每天回来都很累。", pinyin: "Tā měitiān huílái dōu hěn lèi.", english: "He is very tired every day when he comes back." }
+                    ]
+                }
+            ],
+            3: [
+                {
+                    id: "03-1",
+                    title: "在房间 (In the room)",
+                    content: [
+                        { speaker: "A", chinese: "这块手表是你的吗?", pinyin: "Zhè kuài shǒubiǎo shì nǐ de ma?", english: "Is this watch yours?" },
+                        { speaker: "B", chinese: "不是我的。是我爸爸的。", pinyin: "Bú shì wǒ de. Shì wǒ bàba de.", english: "It's not mine. It's my father's." },
+                        { speaker: "A", chinese: "多少钱买的?", pinyin: "Duōshao qián mǎi de?", english: "How much did you buy it for?" },
+                        { speaker: "B", chinese: "三千多块。", pinyin: "Sānqiān duō kuài.", english: "Over three thousand yuan." }
+                    ]
+                },
+                {
+                    id: "03-2",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "这是今天早上的报纸吗?", pinyin: "Zhè shì jīntiān zǎoshang de bàozhǐ ma?", english: "Is this this morning's newspaper?" },
+                        { speaker: "B", chinese: "不是,是昨天的。", pinyin: "Bú shì, shì zuótiān de.", english: "No, it's yesterday's." },
+                        { speaker: "A", chinese: "你听,是不是送报纸的来了?", pinyin: "Nǐ tīng, shì bú shì sòng bàozhǐ de lái le?", english: "Listen, is that the newspaper delivery person coming?" },
+                        { speaker: "B", chinese: "我看一下。不是,是送牛奶的。", pinyin: "Wǒ kàn yíxià. Bú shì, shì sòng niúnǎi de.", english: "Let me take a look. No, it's the milk delivery person." }
+                    ]
+                },
+                {
+                    id: "03-3",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "这是谁的房间?", pinyin: "Zhè shì shéi de fángjiān?", english: "Whose room is this?" },
+                        { speaker: "B", chinese: "这是我和我丈夫的,旁边那个小的房间是我女儿的。", pinyin: "Zhè shì wǒ hé wǒ zhàngfu de, pángbiān nà ge xiǎo de fángjiān shì wǒ nǚ'ér de.", english: "This is mine and my husband's, the small room next to it is my daughter's." },
+                        { speaker: "A", chinese: "你女儿的房间真漂亮!都是粉色的。", pinyin: "Nǐ nǚ'ér de fángjiān zhēn piàoliang! Dōu shì fěnsè de.", english: "Your daughter's room is really beautiful! It's all pink." },
+                        { speaker: "B", chinese: "是啊,粉色是我女儿最喜欢的颜色。", pinyin: "Shì a, fěnsè shì wǒ nǚ'ér zuì xǐhuan de yánsè.", english: "Yes, pink is my daughter's favorite color." }
+                    ]
+                },
+                {
+                    id: "03-4",
+                    title: "在办公室 (In the office)",
+                    content: [
+                        { speaker: "A", chinese: "你看见我的杯子了吗?", pinyin: "Nǐ kànjiàn wǒ de bēizi le ma?", english: "Have you seen my cup?" },
+                        { speaker: "B", chinese: "这里有几个杯子,哪个是你的?", pinyin: "Zhèlǐ yǒu jǐ gè bēizi, nǎge shì nǐ de?", english: "There are several cups here, which one is yours?" },
+                        { speaker: "A", chinese: "左边那个红色的是我的。", pinyin: "Zuǒbiān nà ge hóngsè de shì wǒ de.", english: "The red one on the left is mine." },
+                        { speaker: "B", chinese: "给你。", pinyin: "Gěi nǐ.", english: "Here you go." }
+                    ]
+                }
+            ],
+            4: [
+                {
+                    id: "04-1",
+                    title: "在教室 (In the classroom)",
+                    content: [
+                        { speaker: "A", chinese: "生日快乐!这是送给你的!", pinyin: "Shēngrì kuàilè! Zhè shì sòng gěi nǐ de!", english: "Happy Birthday! This is for you!" },
+                        { speaker: "B", chinese: "是什么?是一本书吗?", pinyin: "Shì shénme? Shì yì běn shū ma?", english: "What is it? Is it a book?" },
+                        { speaker: "A", chinese: "对,这本书是我写的。", pinyin: "Duì, zhè běn shū shì wǒ xiě de.", english: "Yes, I wrote this book." },
+                        { speaker: "B", chinese: "太谢谢你了!", pinyin: "Tài xièxie nǐ le!", english: "Thank you so much!" }
+                    ]
+                },
+                {
+                    id: "04-2",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "早上有你一个电话。", pinyin: "Zǎoshang yǒu nǐ yí gè diànhuà.", english: "There was a phone call for you this morning." },
+                        { speaker: "B", chinese: "电话是谁打的?", pinyin: "Diànhuà shì shéi dǎ de?", english: "Who called?" },
+                        { speaker: "A", chinese: "不知道,是儿子接的。", pinyin: "Bù zhīdào, shì érzi jiē de.", english: "I don't know, our son answered it." },
+                        { speaker: "B", chinese: "好,晚上我问一下儿子。", pinyin: "Hǎo, wǎnshang wǒ wèn yíxià érzi.", english: "Okay, I'll ask our son this evening." }
+                    ]
+                },
+                {
+                    id: "04-3",
+                    title: "在运动场 (On the playground)",
+                    content: [
+                        { speaker: "A", chinese: "你喜欢踢足球吗?", pinyin: "Nǐ xǐhuan tī zúqiú ma?", english: "Do you like playing football?" },
+                        { speaker: "B", chinese: "非常喜欢。", pinyin: "Fēicháng xǐhuan.", english: "I like it very much." },
+                        { speaker: "A", chinese: "你是什么时候开始踢足球的?", pinyin: "Nǐ shì shénme shíhou kāishǐ tī zúqiú de?", english: "When did you start playing football?" },
+                        { speaker: "B", chinese: "我十一岁的时候开始踢足球,已经踢了十年了。", pinyin: "Wǒ shíyī suì de shíhou kāishǐ tī zúqiú, yǐjīng tī le shí nián le.", english: "I started playing football when I was eleven, I've been playing for ten years." }
+                    ]
+                },
+                {
+                    id: "04-4",
+                    title: "在公司 (In the company)",
+                    content: [
+                        { speaker: "A", chinese: "你在这儿工作多长时间了?", pinyin: "Nǐ zài zhèr gōngzuò duō cháng shíjiān le?", english: "How long have you been working here?" },
+                        { speaker: "B", chinese: "已经两年多了,我是2011年来的。", pinyin: "Yǐjīng liǎng nián duō le, wǒ shì èr líng yī yī nián lái de.", english: "More than two years already, I came in 2011." },
+                        { speaker: "A", chinese: "你认识谢先生吗?", pinyin: "Nǐ rènshi Xiè xiānsheng ma?", english: "Do you know Mr. Xie?" },
+                        { speaker: "B", chinese: "认识,我们是大学同学,这个工作是他帮我介绍的。", pinyin: "Rènshi, wǒmen shì dàxué tóngxué, zhège gōngzuò shì tā bāng wǒ jièshào de.", english: "Yes, we were college classmates, he helped introduce me to this job." }
+                    ]
+                }
+            ],
+            5: [
+                {
+                    id: "05-1",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "晚上我们去饭馆吃饭,怎么样?", pinyin: "Wǎnshang wǒmen qù fànguǎn chīfàn, zěnmeyàng?", english: "How about we go to a restaurant for dinner tonight?" },
+                        { speaker: "B", chinese: "我不想去外面吃,我想在家吃。", pinyin: "Wǒ bù xiǎng qù wàimiàn chī, wǒ xiǎng zài jiā chī.", english: "I don't want to eat out, I want to eat at home." },
+                        { speaker: "A", chinese: "那你准备做什么呢?", pinyin: "Nà nǐ zhǔnbèi zuò shénme ne?", english: "Then what are you planning to make?" },
+                        { speaker: "B", chinese: "就做你爱吃的鱼吧。", pinyin: "Jiù zuò nǐ ài chī de yú ba.", english: "Let's make the fish that you love." }
+                    ]
+                },
+                {
+                    id: "05-2",
+                    title: "在商店 (In a store)",
+                    content: [
+                        { speaker: "A", chinese: "帮我看一下这件衣服怎么样。", pinyin: "Bāng wǒ kàn yíxià zhè jiàn yīfu zěnmeyàng.", english: "Help me check how this piece of clothing looks." },
+                        { speaker: "B", chinese: "颜色还可以,就是有点儿大。", pinyin: "Yánsè hái kěyǐ, jiùshì yǒudiǎnr dà.", english: "The color is okay, but it's a bit big." },
+                        { speaker: "A", chinese: "这件小的怎么样?", pinyin: "Zhè jiàn xiǎo de zěnmeyàng?", english: "How about this small one?" },
+                        { speaker: "B", chinese: "这件不错,就买这件吧。", pinyin: "Zhè jiàn búcuò, jiù mǎi zhè jiàn ba.", english: "This one is nice, just buy this one." }
+                    ]
+                },
+                {
+                    id: "05-3",
+                    title: "在教室 (In the classroom)",
+                    content: [
+                        { speaker: "A", chinese: "今天去不去打球?", pinyin: "Jīntiān qù bú qù dǎqiú?", english: "Are you going to play ball today?" },
+                        { speaker: "B", chinese: "这两天有点儿累,不去打球了。", pinyin: "Zhè liǎng tiān yǒudiǎnr lèi, bú qù dǎqiú le.", english: "I've been a bit tired these couple of days, I won't go play." },
+                        { speaker: "A", chinese: "你在做什么呢?是在想昨天的考试吗?", pinyin: "Nǐ zài zuò shénme ne? Shì zài xiǎng zuótiān de kǎoshì ma?", english: "What are you doing? Are you thinking about yesterday's exam?" },
+                        { speaker: "B", chinese: "是啊,我觉得听和说还可以,读和写不好,很多字我都不知道是什么意思。", pinyin: "Shì a, wǒ juéde tīng hé shuō hái kěyǐ, dú hé xiě bù hǎo, hěn duō zì wǒ dōu bù zhīdào shì shénme yìsi.", english: "Yes, I think listening and speaking were okay, but reading and writing were not good. I didn't know the meaning of many characters." }
+                    ]
+                },
+                {
+                    id: "05-4",
+                    title: "在公司 (In the company)",
+                    content: [
+                        { speaker: "A", chinese: "休息一下吧,喝咖啡吗?", pinyin: "Xiūxi yíxià ba, hē kāfēi ma?", english: "Let's take a break, do you want some coffee?" },
+                        { speaker: "B", chinese: "不喝了,我已经喝两杯了。", pinyin: "Bù hē le, wǒ yǐjīng hē liǎng bēi le.", english: "I won't drink anymore, I've already had two cups." },
+                        { speaker: "A", chinese: "是啊,咖啡喝多了对身体不好。", pinyin: "Shì a, kāfēi hē duō le duì shēntǐ bù hǎo.", english: "Yeah, drinking too much coffee is not good for your health." }
+                    ]
+                }
+            ],
+            6: [
+                {
+                    id: "06-1",
+                    title: "在学校 (In the school)",
+                    content: [
+                        { speaker: "A", chinese: "你知道小王今天什么时候来学校吗?", pinyin: "Nǐ zhīdào Xiǎo Wáng jīntiān shénme shíhou lái xuéxiào ma?", english: "Do you know when Xiao Wang is coming to school today?" },
+                        { speaker: "B", chinese: "他已经来了。", pinyin: "Tā yǐjīng lái le.", english: "He has already come." },
+                        { speaker: "A", chinese: "你怎么知道他来了?", pinyin: "Nǐ zěnme zhīdào tā lái le?", english: "How do you know he is here?" },
+                        { speaker: "B", chinese: "我在门外看见他的自行车了。", pinyin: "Wǒ zài ménwài kànjiàn tā de zìxíngchē le.", english: "I saw his bicycle outside the door." }
+                    ]
+                },
+                {
+                    id: "06-2",
+                    title: "在饭馆 (In a restaurant)",
+                    content: [
+                        { speaker: "A", chinese: "今天的羊肉很好吃,你怎么不吃了?", pinyin: "Jīntiān de yángròu hěn hǎochī, nǐ zěnme bù chī le?", english: "Today's mutton is very delicious, why aren't you eating anymore?" },
+                        { speaker: "B", chinese: "这个星期天天都吃羊肉,不想吃了。", pinyin: "Zhège xīngqī tiāntiān dōu chī yángròu, bù xiǎng chī le.", english: "I've eaten mutton every day this week, I don't want to eat it anymore." },
+                        { speaker: "A", chinese: "那你还想吃什么?", pinyin: "Nà nǐ hái xiǎng chī shénme?", english: "Then what else do you want to eat?" },
+                        { speaker: "B", chinese: "来一点儿面条吧。", pinyin: "Lái yìdiǎnr miàntiáo ba.", english: "Let's have some noodles." }
+                    ]
+                },
+                {
+                    id: "06-3",
+                    title: "在健身房 (In the gym)",
+                    content: [
+                        { speaker: "A", chinese: "昨天你们怎么都没去打篮球?", pinyin: "Zuótiān nǐmen zěnme dōu méi qù dǎ lánqiú?", english: "Why didn't you guys go play basketball yesterday?" },
+                        { speaker: "B", chinese: "因为昨天下雨,所以我们都没去。我去游泳了。", pinyin: "Yīnwèi zuótiān xiàyǔ, suǒyǐ wǒmen dōu méi qù. Wǒ qù yóuyǒng le.", english: "Because it rained yesterday, so none of us went. I went swimming." },
+                        { speaker: "A", chinese: "你经常游泳吗?", pinyin: "Nǐ jīngcháng yóuyǒng ma?", english: "Do you swim often?" },
+                        { speaker: "B", chinese: "这个月我天天游泳,我现在七十公斤了。", pinyin: "Zhège yuè wǒ tiāntiān yóuyǒng, wǒ xiànzài qīshí gōngjīn le.", english: "I've been swimming every day this month, I'm now 70 kilograms." }
+                    ]
+                },
+                {
+                    id: "06-4",
+                    title: "在办公室 (In the office)",
+                    content: [
+                        { speaker: "A", chinese: "这两天怎么没看见小张?", pinyin: "Zhè liǎng tiān zěnme méi kànjiàn Xiǎo Zhāng?", english: "Why haven't I seen Xiao Zhang these past couple of days?" },
+                        { speaker: "B", chinese: "他去北京了。", pinyin: "Tā qù Běijīng le.", english: "He went to Beijing." },
+                        { speaker: "A", chinese: "去北京了?是去旅游吗?", pinyin: "Qù Běijīng le? Shì qù lǚyóu ma?", english: "Went to Beijing? Did he go for travel?" },
+                        { speaker: "B", chinese: "不是,听说是去看他姐姐。", pinyin: "Bú shì, tīngshuō shì qù kàn tā jiějie.", english: "No, I heard he went to see his older sister." }
+                    ]
+                }
+            ],
+            7: [
+                {
+                    id: "07-1",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "大卫回来了吗?", pinyin: "Dàwèi huílái le ma?", english: "Has David come back?" },
+                        { speaker: "B", chinese: "没有,他还在教室学习呢。", pinyin: "Méiyǒu, tā hái zài jiàoshì xuéxí ne.", english: "No, he is still studying in the classroom." },
+                        { speaker: "A", chinese: "已经9点多了,他怎么还在学习?", pinyin: "Yǐjīng jiǔ diǎn duō le, tā zěnme hái zài xuéxí?", english: "It's already past 9 o'clock, why is he still studying?" },
+                        { speaker: "B", chinese: "明天有考试,他说今天要好好准备。", pinyin: "Míngtiān yǒu kǎoshì, tā shuō jīntiān yào hǎohao zhǔnbèi.", english: "There is an exam tomorrow, he said he needs to prepare well today." }
+                    ]
+                },
+                {
+                    id: "07-2",
+                    title: "去机场的路上 (On the way to the airport)",
+                    content: [
+                        { speaker: "A", chinese: "你现在在哪儿呢?", pinyin: "Nǐ xiànzài zài nǎr ne?", english: "Where are you right now?" },
+                        { speaker: "B", chinese: "在去机场的路上。你已经到了吗?", pinyin: "Zài qù jīchǎng de lùshang. Nǐ yǐjīng dào le ma?", english: "On the way to the airport. Have you arrived already?" },
+                        { speaker: "A", chinese: "我下飞机了。你还有多长时间能到这儿?", pinyin: "Wǒ xià fēijī le. Nǐ hái yǒu duō cháng shíjiān néng dào zhèr?", english: "I've gotten off the plane. How much longer until you get here?" },
+                        { speaker: "B", chinese: "二十分钟就到。", pinyin: "Èrshí fēnzhōng jiù dào.", english: "I'll be there in twenty minutes." }
+                    ]
+                },
+                {
+                    id: "07-3",
+                    title: "在健身房 (In the gym)",
+                    content: [
+                        { speaker: "A", chinese: "你家离公司远吗?", pinyin: "Nǐ jiā lí gōngsī yuǎn ma?", english: "Is your home far from the company?" },
+                        { speaker: "B", chinese: "很远,坐公共汽车要一个多小时呢!", pinyin: "Hěn yuǎn, zuò gōnggòngqìchē yào yí gè duō xiǎoshí ne!", english: "Very far, it takes over an hour by bus!" },
+                        { speaker: "A", chinese: "坐公共汽车太慢了,你怎么不开车?", pinyin: "Zuò gōnggòngqìchē tài màn le, nǐ zěnme bù kāichē?", english: "Taking the bus is too slow, why don't you drive?" },
+                        { speaker: "B", chinese: "开车也不快,路上车太多了!", pinyin: "Kāichē yě bú kuài, lùshang chē tài duō le!", english: "Driving isn't fast either, there are too many cars on the road!" }
+                    ]
+                },
+                {
+                    id: "07-4",
+                    title: "在路上 (On the way)",
+                    content: [
+                        { speaker: "A", chinese: "今天晚上我们一起吃饭吧,给你过生日。", pinyin: "Jīntiān wǎnshang wǒmen yìqǐ chīfàn ba, gěi nǐ guò shēngrì.", english: "Let's have dinner together tonight to celebrate your birthday." },
+                        { speaker: "B", chinese: "今天?离我的生日还有一个多星期呢!", pinyin: "Jīntiān? Lí wǒ de shēngrì hái yǒu yí gè duō xīngqī ne!", english: "Today? My birthday is still more than a week away!" },
+                        { speaker: "A", chinese: "下个星期我要去北京,今天过吧。", pinyin: "Xià gè xīngqī wǒ yào qù Běijīng, jīntiān guò ba.", english: "I am going to Beijing next week, let's celebrate today." },
+                        { speaker: "B", chinese: "好吧,离这儿不远有一个中国饭馆,走几分钟就到了。", pinyin: "Hǎo ba, lí zhèr bù yuǎn yǒu yí gè Zhōngguó fànguǎn, zǒu jǐ fēnzhōng jiù dào le.", english: "Alright, there is a Chinese restaurant not far from here, we can walk there in a few minutes." }
+                    ]
+                }
+            ],
+            8: [
+                {
+                    id: "08-1",
+                    title: "在教室 (In the classroom)",
+                    content: [
+                        { speaker: "A", chinese: "我们下午去看电影,好吗?", pinyin: "Wǒmen xiàwǔ qù kàn diànyǐng, hǎo ma?", english: "Shall we go watch a movie this afternoon?" },
+                        { speaker: "B", chinese: "今天下午我没有时间,明天下午再去吧。", pinyin: "Jīntiān xiàwǔ wǒ méiyǒu shíjiān, míngtiān xiàwǔ zài qù ba.", english: "I don't have time this afternoon, let's go tomorrow afternoon instead." },
+                        { speaker: "A", chinese: "你想看什么电影?", pinyin: "Nǐ xiǎng kàn shénme diànyǐng?", english: "What movie do you want to see?" },
+                        { speaker: "B", chinese: "让我想想再告诉你。", pinyin: "Ràng wǒ xiǎngxiang zài gàosu nǐ.", english: "Let me think about it and then tell you." }
+                    ]
+                },
+                {
+                    id: "08-2",
+                    title: "在宿舍 (In the Dorm)",
+                    content: [
+                        { speaker: "A", chinese: "外边天气很好,我们出去运动运动吧!", pinyin: "Wàibian tiānqì hěn hǎo, wǒmen chūqù yùndòng yùndòng ba!", english: "The weather outside is very good, let's go out and exercise a bit!" },
+                        { speaker: "B", chinese: "你等等我,好吗?王老师让我给大卫打个电话。", pinyin: "Nǐ děngdeng wǒ, hǎo ma? Wáng lǎoshī ràng wǒ gěi Dàwèi dǎ gè diànhuà.", english: "Wait for me, okay? Teacher Wang asked me to call David." },
+                        { speaker: "A", chinese: "回来再打吧。找大卫有什么事情吗?", pinyin: "Huílái zài dǎ ba. Zhǎo Dàwèi yǒu shénme shìqing ma?", english: "Call when we get back. Is there something you need David for?" },
+                        { speaker: "B", chinese: "听说大卫病了,我想找时间去看看他。", pinyin: "Tīngshuō Dàwèi bìng le, wǒ xiǎng zhǎo shíjiān qù kànkan tā.", english: "I heard David is sick, I want to find time to go visit him." }
+                    ]
+                },
+                {
+                    id: "08-3",
+                    title: "在宾馆的前台 (At the front desk)",
+                    content: [
+                        { speaker: "A", chinese: "服务员,我房间的门打不开了。", pinyin: "Fúwùyuán, wǒ fángjiān de mén dǎ bù kāi le.", english: "Waiter, I can't open the door to my room." },
+                        { speaker: "B", chinese: "您住哪个房间?", pinyin: "Nín zhù nǎge fángjiān?", english: "Which room do you stay in?" },
+                        { speaker: "A", chinese: "317.", pinyin: "Sān yāo qī.", english: "317." },
+                        { speaker: "B", chinese: "好的,我叫人去看看。", pinyin: "Hǎo de, wǒ jiào rén qù kànkan.", english: "Okay, I'll have someone go take a look." }
+                    ]
+                },
+                {
+                    id: "08-4",
+                    title: "在商店 (In a store)",
+                    content: [
+                        { speaker: "A", chinese: "你看看这几件衣服怎么样。", pinyin: "Nǐ kànkan zhè jǐ jiàn yīfu zěnmeyàng.", english: "Take a look at these clothes, what do you think?" },
+                        { speaker: "B", chinese: "这件白的有点儿长,那件黑的有点儿贵。", pinyin: "Zhè jiàn bái de yǒudiǎnr cháng, nà jiàn hēi de yǒudiǎnr guì.", english: "This white one is a bit long, that black one is a bit expensive." },
+                        { speaker: "A", chinese: "这件红的呢?这是今天新来的。", pinyin: "Zhè jiàn hóng de ne? Zhè shì jīntiān xīn lái de.", english: "What about this red one? It just arrived today." },
+                        { speaker: "B", chinese: "让我再看看。", pinyin: "Ràng wǒ zài kànkan.", english: "Let me take another look." }
+                    ]
+                }
+            ],
+            9: [
+                {
+                    id: "09-1",
+                    title: "打电话 (On the phone)",
+                    content: [
+                        { speaker: "A", chinese: "你好!请问张欢在吗?", pinyin: "Nǐ hǎo! Qǐngwèn Zhāng Huān zài ma?", english: "Hello! May I ask if Zhang Huan is there?" },
+                        { speaker: "B", chinese: "你打错了,我们这儿没有叫张欢的。", pinyin: "Nǐ dǎcuò le, wǒmen zhèr méiyǒu jiào Zhāng Huān de.", english: "You have the wrong number, there is no one called Zhang Huan here." },
+                        { speaker: "A", chinese: "对不起。", pinyin: "Duìbuqǐ.", english: "Sorry." }
+                    ]
+                },
+                {
+                    id: "09-2",
+                    title: "在学校 (In the school)",
+                    content: [
+                        { speaker: "A", chinese: "您从几岁开始学习跳舞?", pinyin: "Nín cóng jǐ suì kāishǐ xuéxí tiàowǔ?", english: "At what age did you start learning to dance?" },
+                        { speaker: "B", chinese: "我第一次跳舞是在七岁的时候。", pinyin: "Wǒ dì yī cì tiàowǔ shì zài qī suì de shíhou.", english: "My first time dancing was when I was seven years old." },
+                        { speaker: "A", chinese: "我女儿今年也七岁了。我希望她能跟您学跳舞,可以吗?", pinyin: "Wǒ nǚ'ér jīnnián yě qī suì le. Wǒ xīwàng tā néng gēn nín xué tiàowǔ, kěyǐ ma?", english: "My daughter is also seven this year. I hope she can learn dancing from you, is that okay?" },
+                        { speaker: "B", chinese: "没问题,非常欢迎。", pinyin: "Méi wèntí, fēicháng huānyíng.", english: "No problem, very welcome." }
+                    ]
+                },
+                {
+                    id: "09-3",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "你知道吗?大卫找到工作了。", pinyin: "Nǐ zhīdào ma? Dàwèi zhǎodào gōngzuò le.", english: "Did you know? David found a job." },
+                        { speaker: "B", chinese: "太好了!他从什么时候开始上班?", pinyin: "Tài hǎo le! Tā cóng shénme shíhou kāishǐ shàngbān?", english: "That's great! When does he start working?" },
+                        { speaker: "A", chinese: "从下个星期一开始。", pinyin: "Cóng xià gè Xīngqīyī kāishǐ.", english: "Starting next Monday." },
+                        { speaker: "B", chinese: "这是他的第一个工作,希望他能喜欢。", pinyin: "Zhè shì tā de dì yī gè gōngzuò, xīwàng tā néng xǐhuan.", english: "This is his first job, I hope he likes it." }
+                    ]
+                },
+                {
+                    id: "09-4",
+                    title: "在教室 (In the classroom)",
+                    content: [
+                        { speaker: "A", chinese: "昨天的考试怎么样?你都听懂了吗?", pinyin: "Zuótiān de kǎoshì zěnmeyàng? Nǐ dōu tīngdǒng le ma?", english: "How was yesterday's exam? Did you understand everything you heard?" },
+                        { speaker: "B", chinese: "听懂了。", pinyin: "Tīngdǒng le.", english: "I understood." },
+                        { speaker: "A", chinese: "你都做完了没有?", pinyin: "Nǐ dōu zuòwán le méiyǒu?", english: "Did you finish everything?" },
+                        { speaker: "B", chinese: "题太多,我没做完。", pinyin: "Tí tài duō, wǒ méi zuòwán.", english: "There were too many questions, I didn't finish." }
+                    ]
+                }
+            ],
+            10: [
+                {
+                    id: "10-1",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "不要看电视了,明天上午还有汉语课呢。", pinyin: "Bú yào kàn diànshì le, míngtiān shàngwǔ hái yǒu Hànyǔ kè ne.", english: "Stop watching TV, there is a Chinese class tomorrow morning." },
+                        { speaker: "B", chinese: "看电视对学汉语有帮助。", pinyin: "Kàn diànshì duì xué Hànyǔ yǒu bāngzhù.", english: "Watching TV helps with learning Chinese." },
+                        { speaker: "A", chinese: "明天的课你都准备好了吗?", pinyin: "Míngtiān de kè nǐ dōu zhǔnbèi hǎo le ma?", english: "Are you ready for tomorrow's class?" },
+                        { speaker: "B", chinese: "都准备好了。", pinyin: "Dōu zhǔnbèi hǎo le.", english: "I'm all ready." }
+                    ]
+                },
+                {
+                    id: "10-2",
+                    title: "在医院 (In the hospital)",
+                    content: [
+                        { speaker: "A", chinese: "别看报纸了,医生说你要多休息。", pinyin: "Bié kàn bàozhǐ le, yīshēng shuō nǐ yào duō xiūxi.", english: "Don't read the newspaper, the doctor said you need more rest." },
+                        { speaker: "B", chinese: "好,不看了。给我一杯茶吧。", pinyin: "Hǎo, bú kàn le. Gěi wǒ yì bēi chá ba.", english: "Okay, I won't read it. Give me a cup of tea." },
+                        { speaker: "A", chinese: "医生说吃药后两个小时不要喝茶。", pinyin: "Yīshēng shuō chī yào hòu liǎng gè xiǎoshí bú yào hē chá.", english: "The doctor said not to drink tea for two hours after taking medicine." },
+                        { speaker: "B", chinese: "医生还说什么了?", pinyin: "Yīshēng hái shuō shénme le?", english: "What else did the doctor say?" },
+                        { speaker: "A", chinese: "医生让你听我的。", pinyin: "Yīshēng ràng nǐ tīng wǒ de.", english: "The doctor told you to listen to me." }
+                    ]
+                },
+                {
+                    id: "10-3",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "你怎么买了这么多东西啊?", pinyin: "Nǐ zěnme mǎi le zhème duō dōngxi a?", english: "Why did you buy so many things?" },
+                        { speaker: "B", chinese: "哥哥今天中午回来吃饭。", pinyin: "Gēge jīntiān zhōngwǔ huílái chīfàn.", english: "Brother is coming back for lunch today." },
+                        { speaker: "A", chinese: "我看看买什么了。羊肉、鸡蛋、面条、西瓜……真不少!", pinyin: "Wǒ kànkan mǎi shénme le. Yángròu, jīdàn, miàntiáo, xīguā... zhēn bù shǎo!", english: "Let me see what you bought. Mutton, eggs, noodles, watermelon... really quite a lot!" },
+                        { speaker: "B", chinese: "正在准备午饭呢!", pinyin: "Zhèngzài zhǔnbèi wǔfàn ne!", english: "She is preparing lunch right now!" }
+                    ]
+                },
+                {
+                    id: "10-4",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "你在找什么?", pinyin: "Nǐ zài zhǎo shénme?", english: "What are you looking for?" },
+                        { speaker: "B", chinese: "你看见我的手机了吗?白色的。", pinyin: "Nǐ kànjiàn wǒ de shǒujī le ma? Báisè de.", english: "Have you seen my phone? The white one." },
+                        { speaker: "A", chinese: "别找了,手机在桌子上呢,电脑旁边。", pinyin: "Bié zhǎo le, shǒujī zài zhuōzi shang ne, diànnǎo pángbiān.", english: "Stop looking, the phone is on the table, next to the computer." },
+                        { speaker: "B", chinese: "你看见我的衣服了吗?红色的那件。", pinyin: "Nǐ kànjiàn wǒ de yīfu le ma? Hóngsè de nà jiàn.", english: "Have you seen my clothes? That red one." },
+                        { speaker: "A", chinese: "那件衣服我帮你洗了,在外边呢。", pinyin: "Nà jiàn yīfu wǒ bāng nǐ xǐ le, zài wàibian ne.", english: "I washed that piece of clothing for you, it's outside." }
+                    ]
+                }
+            ],
+            11: [
+                {
+                    id: "11-1",
+                    title: "在歌厅 (In a singing bar)",
+                    content: [
+                        { speaker: "A", chinese: "王方,昨天和你一起唱歌的人是谁?", pinyin: "Wáng Fāng, zuótiān hé nǐ yìqǐ chànggē de rén shì shéi?", english: "Wang Fang, who was the person singing with you yesterday?" },
+                        { speaker: "B", chinese: "一个朋友。", pinyin: "Yí gè péngyou.", english: "A friend." },
+                        { speaker: "A", chinese: "什么朋友?是不是男朋友?", pinyin: "Shénme péngyou? Shì bú shì nánpéngyou?", english: "What friend? Is it a boyfriend?" },
+                        { speaker: "B", chinese: "不是不是,我同学介绍的,昨天第一次见。", pinyin: "Bú shì bú shì, wǒ tóngxué jièshào de, zuótiān dì yī cì jiàn.", english: "No no, my classmate introduced him, we met for the first time yesterday." }
+                    ]
+                },
+                {
+                    id: "11-2",
+                    title: "在宿舍 (In the dorm)",
+                    content: [
+                        { speaker: "A", chinese: "左边这个看报纸的女孩子是你姐姐吗?", pinyin: "Zuǒbiān zhège kàn bàozhǐ de nǚháizi shì nǐ jiějie ma?", english: "Is this girl on the left reading the newspaper your older sister?" },
+                        { speaker: "B", chinese: "是,右边写字的那个人是我哥哥。", pinyin: "Shì, yòubiān xiězì de nàge rén shì wǒ gēge.", english: "Yes, and the person writing on the right is my older brother." },
+                        { speaker: "A", chinese: "你哥哥多大?", pinyin: "Nǐ gēge duō dà?", english: "How old is your brother?" },
+                        { speaker: "B", chinese: "25岁,他比我大三岁。", pinyin: "Èrshíwǔ suì, tā bǐ wǒ dà sān suì.", english: "25 years old, he is three years older than me." }
+                    ]
+                },
+                {
+                    id: "11-3",
+                    title: "在商店 (At a store)",
+                    content: [
+                        { speaker: "A", chinese: "今天的西瓜怎么卖?", pinyin: "Jīntiān de xīguā zěnme mài?", english: "How are the watermelons sold today?" },
+                        { speaker: "B", chinese: "三块五一斤。", pinyin: "Sān kuài wǔ yì jīn.", english: "3.5 yuan per jin (500g)." },
+                        { speaker: "A", chinese: "比昨天便宜。", pinyin: "Bǐ zuótiān piányi.", english: "Cheaper than yesterday." },
+                        { speaker: "B", chinese: "是,苹果也比昨天便宜一些。您来点儿吧。", pinyin: "Shì, píngguǒ yě bǐ zuótiān piányi yìxiē. Nín lái diǎnr ba.", english: "Yes, apples are also a bit cheaper than yesterday. Why don't you buy some?" }
+                    ]
+                },
+                {
+                    id: "11-4",
+                    title: "在学校 (In the school)",
+                    content: [
+                        { speaker: "A", chinese: "前边说话的那个人就是我的汉语老师。你可能不认识她。", pinyin: "Qiánbian shuōhuà de nàge rén jiùshì wǒ de Hànyǔ lǎoshī. Nǐ kěnéng bú rènshi tā.", english: "That person talking in the front is my Chinese teacher. You probably don't know her." },
+                        { speaker: "B", chinese: "是新来的汉语老师吗?", pinyin: "Shì xīn lái de Hànyǔ lǎoshī ma?", english: "Is she the new Chinese teacher?" },
+                        { speaker: "A", chinese: "是去年来的,她姓王,28岁。", pinyin: "Shì qùnián lái de, tā xìng Wáng, èrshíbā suì.", english: "She came last year, her surname is Wang, 28 years old." },
+                        { speaker: "B", chinese: "她比我们老师小两岁。", pinyin: "Tā bǐ wǒmen lǎoshī xiǎo liǎng suì.", english: "She is two years younger than our teacher." }
+                    ]
+                }
+            ],
+            12: [
+                {
+                    id: "12-1",
+                    title: "在教室 (In the classroom)",
+                    content: [
+                        { speaker: "A", chinese: "你每天早上几点起床?", pinyin: "Nǐ měitiān zǎoshang jǐ diǎn qǐchuáng?", english: "What time do you get up every morning?" },
+                        { speaker: "B", chinese: "六点多。", pinyin: "Liù diǎn duō.", english: "Past six o'clock." },
+                        { speaker: "A", chinese: "你比我早起一个小时。", pinyin: "Nǐ bǐ wǒ zǎo qǐ yí gè xiǎoshí.", english: "You get up an hour earlier than me." },
+                        { speaker: "B", chinese: "我睡得也早,我每天晚上十点就睡觉。早睡早起身体好。", pinyin: "Wǒ shuì de yě zǎo, wǒ měitiān wǎnshang shí diǎn jiù shuìjiào. Zǎo shuì zǎo qǐ shēntǐ hǎo.", english: "I go to sleep early too, I sleep at ten every night. Early to bed and early to rise makes you healthy." }
+                    ]
+                },
+                {
+                    id: "12-2",
+                    title: "在朋友家 (At a friend's home)",
+                    content: [
+                        { speaker: "A", chinese: "再来点儿米饭吧,你吃得太少了。", pinyin: "Zài lái diǎnr mǐfàn ba, nǐ chī de tài shǎo le.", english: "Have some more rice, you ate too little." },
+                        { speaker: "B", chinese: "不少了,今天吃得很好,太谢谢你了。", pinyin: "Bù shǎo le, jīntiān chī de hěn hǎo, tài xièxie nǐ le.", english: "It's not little, I ate very well today, thank you so much." },
+                        { speaker: "A", chinese: "你做饭做得怎么样?", pinyin: "Nǐ zuòfàn zuò de zěnmeyàng?", english: "How is your cooking?" },
+                        { speaker: "B", chinese: "不怎么样,我妻子比我做得好。", pinyin: "Bù zěnmeyàng, wǒ qīzi bǐ wǒ zuò de hǎo.", english: "Not that good, my wife cooks better than me." }
+                    ]
+                },
+                {
+                    id: "12-3",
+                    title: "在家门口 (At the door)",
+                    content: [
+                        { speaker: "A", chinese: "下雪了,今天真冷。", pinyin: "Xiàxuě le, jīntiān zhēn lěng.", english: "It's snowing, it's really cold today." },
+                        { speaker: "B", chinese: "有零下10度吧?", pinyin: "Yǒu língxià shí dù ba?", english: "Is it minus 10 degrees?" },
+                        { speaker: "A", chinese: "是啊,你穿得太少了,我们进房间吧。", pinyin: "Shì a, nǐ chuān de tài shǎo le, wǒmen jìn fángjiān ba.", english: "Yes, you are wearing too little, let's go inside the room." },
+                        { speaker: "B", chinese: "好吧。", pinyin: "Hǎo ba.", english: "Alright." }
+                    ]
+                },
+                {
+                    id: "12-4",
+                    title: "在家里 (At home)",
+                    content: [
+                        { speaker: "A", chinese: "你在忙什么呢?", pinyin: "Nǐ zài máng shénme ne?", english: "What are you busy with?" },
+                        { speaker: "B", chinese: "我弟弟让我帮他找个房子,现在他家离公司有点儿远。", pinyin: "Wǒ dìdi ràng wǒ bāng tā zhǎo gè fángzi, xiànzài tā jiā lí gōngsī yǒudiǎnr yuǎn.", english: "My younger brother asked me to help him find a house, his current home is a bit far from the company." },
+                        { speaker: "A", chinese: "住得远真的很累!", pinyin: "Zhù de yuǎn zhēn de hěn lèi!", english: "Living far away is really tiring!" },
+                        { speaker: "B", chinese: "是啊,他也希望能住得近一点儿。", pinyin: "Shì a, tā yě xīwàng néng zhù de jìn yìdiǎnr.", english: "Yes, he also hopes to live a bit closer." }
+                    ]
+                }
+            ],
+            13: [
+                {
+                    id: "13-1",
+                    title: "在办公室 (In the office)",
+                    content: [
+                        { speaker: "A", chinese: "门开着呢,请进。", pinyin: "Mén kāizhe ne, qǐng jìn.", english: "The door is open, please come in." },
+                        { speaker: "B", chinese: "请问,张先生在吗?", pinyin: "Qǐngwèn, Zhāng xiānsheng zài ma?", english: "Excuse me, is Mr. Zhang here?" },
+                        { speaker: "A", chinese: "他出去了。你下午再来吧。", pinyin: "Tā chūqù le. Nǐ xiàwǔ zài lái ba.", english: "He went out. Come back this afternoon." },
+                        { speaker: "B", chinese: "好的,谢谢!", pinyin: "Hǎo de, xièxie!", english: "Okay, thank you!" }
+                    ]
+                },
+                {
+                    id: "13-2",
+                    title: "在办公室 (In the office)",
+                    content: [
+                        { speaker: "A", chinese: "那个正在说话的女孩儿是谁?", pinyin: "Nàge zhèngzài shuōhuà de nǚháir shì shéi?", english: "Who is that girl who is talking?" },
+                        { speaker: "B", chinese: "我知道她的名字,她姓杨,叫杨笑笑,她姐姐是我同学。", pinyin: "Wǒ zhīdào tā de míngzi, tā xìng Yáng, jiào Yáng Xiàoxiao, tā jiějie shì wǒ tóngxué.", english: "I know her name, her surname is Yang, called Yang Xiaoxiao, her sister is my classmate." },
+                        { speaker: "A", chinese: "那个手里拿着铅笔的呢?", pinyin: "Nàge shǒulǐ názhe qiānbǐ de ne?", english: "What about the one holding a pencil in her hand?" },
+                        { speaker: "B", chinese: "我不认识。", pinyin: "Wǒ bú rènshi.", english: "I don't know her." }
+                    ]
+                },
+                {
+                    id: "13-3",
+                    title: "在运动场 (On the playground)",
+                    content: [
+                        { speaker: "A", chinese: "听说你有女朋友了?我认识她吗?", pinyin: "Tīngshuō nǐ yǒu nǚpéngyou le? Wǒ rènshi tā ma?", english: "I heard you have a girlfriend? Do I know her?" },
+                        { speaker: "B", chinese: "就是我们班那个长着两个大眼睛,非常爱笑的女孩儿。", pinyin: "Jiùshì wǒmen bān nàge zhǎngzhe liǎng gè dà yǎnjing, fēicháng ài xiào de nǚháir.", english: "It's the girl in our class with big eyes who loves to smile." },
+                        { speaker: "A", chinese: "她不是有男朋友吗?", pinyin: "Tā bú shì yǒu nánpéngyou ma?", english: "Doesn't she have a boyfriend?" },
+                        { speaker: "B", chinese: "那个已经是她的前男友了。", pinyin: "Nàge yǐjīng shì tā de qián nányǒu le.", english: "That is already her ex-boyfriend." }
+                    ]
+                },
+                {
+                    id: "13-4",
+                    title: "在路上 (On the road)",
+                    content: [
+                        { speaker: "A", chinese: "请问,这儿离新京宾馆远吗?", pinyin: "Qǐngwèn, zhèr lí Xīnjīng Bīnguǎn yuǎn ma?", english: "Excuse me, is Xinjing Hotel far from here?" },
+                        { speaker: "B", chinese: "不远,走路二十分钟就到。", pinyin: "Bù yuǎn, zǒulù èrshí fēnzhōng jiù dào.", english: "Not far, it takes twenty minutes to walk there." },
+                        { speaker: "A", chinese: "你能告诉我怎么走吗?", pinyin: "Nǐ néng gàosu wǒ zěnme zǒu ma?", english: "Can you tell me how to get there?" },
+                        { speaker: "B", chinese: "从这儿一直往前走,到了前面的路口再往右走。", pinyin: "Cóng zhèr yìzhí wǎng qián zǒu, dào le qiánmian de lùkǒu zài wǎng yòu zǒu.", english: "Go straight forward from here, turn right when you reach the intersection ahead." }
+                    ]
+                }
+            ],
+            14: [
+                {
+                    id: "14-1",
+                    title: "在教室 (In the classroom)",
+                    content: [
+                        { speaker: "A", chinese: "你看过那个电影没有?", pinyin: "Nǐ kànguo nàge diànyǐng méiyǒu?", english: "Have you seen that movie?" },
+                        { speaker: "B", chinese: "没看过,听说很有意思。", pinyin: "Méi kànguo, tīngshuō hěn yǒu yìsi.", english: "No, I haven't. I heard it's very interesting." },
+                        { speaker: "A", chinese: "那我们下个星期一起去看吧?", pinyin: "Nà wǒmen xià gè xīngqī yìqǐ qù kàn ba?", english: "Then let's go watch it together next week?" },
+                        { speaker: "B", chinese: "可以,但是我女朋友也想去。", pinyin: "Kěyǐ, dànshì wǒ nǚpéngyou yě xiǎng qù.", english: "Sure, but my girlfriend wants to go too." }
+                    ]
+                },
+                {
+                    id: "14-2",
+                    title: "在办公室 (In the office)",
+                    content: [
+                        { speaker: "A", chinese: "听说你去过中国,还想去吗?", pinyin: "Tīngshuō nǐ qùguo Zhōngguó, hái xiǎng qù ma?", english: "I heard you've been to China, do you still want to go?" },
+                        { speaker: "B", chinese: "我虽然去过好几次,但是还想再去玩儿玩儿。", pinyin: "Wǒ suīrán qùguo hǎo jǐ cì, dànshì hái xiǎng zài qù wánrwanr.", english: "Although I've been there several times, I still want to go and have fun again." },
+                        { speaker: "A", chinese: "那我们一起去吧。", pinyin: "Nà wǒmen yìqǐ qù ba.", english: "Then let's go together." },
+                        { speaker: "B", chinese: "好啊,到时候我给你打电话。", pinyin: "Hǎo a, dào shíhou wǒ gěi nǐ dǎ diànhuà.", english: "Okay, I'll call you when the time comes." }
+                    ]
+                },
+                {
+                    id: "14-3",
+                    title: "在房间 (In the room)",
+                    content: [
+                        { speaker: "A", chinese: "明天天气怎么样?", pinyin: "Míngtiān tiānqì zěnmeyàng?", english: "How is the weather tomorrow?" },
+                        { speaker: "B", chinese: "虽然是晴天,但是很冷。", pinyin: "Suīrán shì qíngtiān, dànshì hěn lěng.", english: "Although it will be sunny, it will be very cold." },
+                        { speaker: "A", chinese: "那还能去跑步吗?", pinyin: "Nà hái néng qù pǎobù ma?", english: "Can we still go running then?" },
+                        { speaker: "B", chinese: "可以,但是你自己去吧,我还有很多事情要做。", pinyin: "Kěyǐ, dànshì nǐ zìjǐ qù ba, wǒ hái yǒu hěn duō shìqing yào zuò.", english: "Yes, but you go by yourself, I still have a lot of things to do." }
+                    ]
+                },
+                {
+                    id: "14-4",
+                    title: "在商店 (In a store)",
+                    content: [
+                        { speaker: "A", chinese: "你在这个商店买过东西没有?", pinyin: "Nǐ zài zhège shāngdiàn mǎiguo dōngxi méiyǒu?", english: "Have you bought anything in this store before?" },
+                        { speaker: "B", chinese: "买过一次,这儿的东西还可以,就是不便宜。", pinyin: "Mǎiguo yí cì, zhèr de dōngxi hái kěyǐ, jiùshì bù piányi.", english: "I bought something once, the stuff here is okay, but not cheap." },
+                        { speaker: "A", chinese: "我喜欢这件衣服,但是觉得有点儿贵。", pinyin: "Wǒ xǐhuan zhè jiàn yīfu, dànshì juéde yǒudiǎnr guì.", english: "I like this piece of clothing, but I think it's a bit expensive." },
+                        { speaker: "B", chinese: "两百块还可以,喜欢就买吧。", pinyin: "Liǎngbǎi kuài hái kěyǐ, xǐhuan jiù mǎi ba.", english: "Two hundred yuan is okay, if you like it, buy it." }
+                    ]
+                }
+            ],
+            15: [
+                {
+                    id: "15-1",
+                    title: "在朋友家 (At a friend's home)",
+                    content: [
+                        { speaker: "A", chinese: "今天是12月20日,新年就要到了。", pinyin: "Jīntiān shì shí'èr yuè èrshí rì, xīnnián jiùyào dào le.", english: "Today is December 20th, the New Year is coming." },
+                        { speaker: "B", chinese: "新年你准备做什么?", pinyin: "Xīnnián nǐ zhǔnbèi zuò shénme?", english: "What are you planning to do for New Year?" },
+                        { speaker: "A", chinese: "我想去北京旅游,北京很不错,我去过一次。", pinyin: "Wǒ xiǎng qù Běijīng lǚyóu, Běijīng hěn búcuò, wǒ qùguo yí cì.", english: "I want to travel to Beijing, Beijing is very nice, I've been there once." },
+                        { speaker: "B", chinese: "你买票了吗?", pinyin: "Nǐ mǎi piào le ma?", english: "Have you bought the ticket?" },
+                        { speaker: "A", chinese: "还没有呢,明天就去火车站买票。", pinyin: "Hái méiyǒu ne, míngtiān jiù qù huǒchēzhàn mǎi piào.", english: "Not yet, I'll go to the train station tomorrow to buy the ticket." }
+                    ]
+                },
+                {
+                    id: "15-2",
+                    title: "在公司 (In the company)",
+                    content: [
+                        { speaker: "A", chinese: "时间过得真快,新的一年快要到了!", pinyin: "Shíjiān guò de zhēn kuài, xīn de yì nián kuàiyào dào le!", english: "Time flies so fast, the new year is coming soon!" },
+                        { speaker: "B", chinese: "是啊,谢谢大家这一年对我的帮助!", pinyin: "Shì a, xièxie dàjiā zhè yì nián duì wǒ de bāngzhù!", english: "Yes, thank you everyone for your help this year!" },
+                        { speaker: "C", chinese: "希望我们的公司明年更好!", pinyin: "Xīwàng wǒmen de gōngsī míngnián gèng hǎo!", english: "Hope our company will be better next year!" }
+                    ]
+                },
+                {
+                    id: "15-3",
+                    title: "在车站 (At the station)",
+                    content: [
+                        { speaker: "A", chinese: "你妹妹怎么还没来?都八点四十了!", pinyin: "Nǐ mèimei zěnme hái méi lái? Dōu bā diǎn sìshí le!", english: "Why hasn't your younger sister come yet? It's already 8:40!" },
+                        { speaker: "B", chinese: "我们再等她几分钟吧。", pinyin: "Wǒmen zài děng tā jǐ fēnzhōng ba.", english: "Let's wait for her a few more minutes." },
+                        { speaker: "A", chinese: "都等她半个小时了!", pinyin: "Dōu děng tā bàn gè xiǎoshí le!", english: "We've been waiting for her for half an hour!" },
+                        { speaker: "B", chinese: "她来了,我听见她说话了。", pinyin: "Tā lái le, wǒ tīngjiàn tā shuōhuà le.", english: "She is here, I heard her speaking." }
+                    ]
+                },
+                {
+                    id: "15-4",
+                    title: "在咖啡馆门口 (Outside a coffee house)",
+                    content: [
+                        { speaker: "A", chinese: "天阴了,我要回去了。", pinyin: "Tiān yīn le, wǒ yào huíqù le.", english: "It's getting cloudy, I'm going back." },
+                        { speaker: "B", chinese: "好的。快要下雨了,你路上慢点儿。", pinyin: "Hǎo de. Kuàiyào xiàyǔ le, nǐ lùshang màn diǎnr.", english: "Okay. It's about to rain, take your time on the way." },
+                        { speaker: "A", chinese: "没关系,我坐公共汽车。", pinyin: "Méiguānxi, wǒ zuò gōnggòngqìchē.", english: "It doesn't matter, I'm taking the bus." },
+                        { speaker: "B", chinese: "好的。再见。", pinyin: "Hǎo de. Zàijiàn.", english: "Okay. Goodbye." }
+                    ]
+                }
+            ]
+        };
+
+        // Dialogue state
+        let currentDialogueChapter = 1;
+        let currentDialogueList = [];
+        let currentDialogueIndex = 0;
+        let allRevealed = false;
+
+        // Show dialogue chapters
+        function showDialogueChapters() {
+            hideAllScreens();
+            document.getElementById('dialogue-chapter-screen').classList.remove('hidden');
+            renderDialogueChapters();
+        }
+
+        function renderDialogueChapters() {
+            const grid = document.getElementById('dialogue-chapter-grid');
+            let html = '';
+            
+            for (let i = 1; i <= 15; i++) {
+                const dialogueCount = hsk2Dialogues[i]?.length || 0;
+                html += `
+                    <div onclick="selectDialogueChapter(${i})" class="card-hover cursor-pointer bg-white rounded-xl p-2 shadow-lg text-center border-2 border-transparent hover:border-orange-500">
+                        <div class="text-base font-bold text-orange-600 mb-0.5">Ch ${i}</div>
+                        <p class="text-xs text-gray-500">${dialogueCount} dialogues</p>
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = html;
+        }
+
+        function selectDialogueChapter(chapter) {
+            currentDialogueChapter = chapter;
+            currentDialogueList = hsk2Dialogues[chapter] || [];
+            currentDialogueIndex = 0;
+            
+            hideAllScreens();
+            document.getElementById('dialogue-selection-screen').classList.remove('hidden');
+            document.getElementById('dialogue-chapter-title').textContent = `Chapter ${chapter} Dialogues`;
+            
+            renderDialogueList();
+        }
+
+        function renderDialogueList() {
+            const container = document.getElementById('dialogue-list');
+            
+            const html = currentDialogueList.map((dialogue, index) => `
+                <div onclick="startDialogue(${index})" class="card-hover cursor-pointer bg-white rounded-xl p-4 shadow-lg border-2 border-transparent hover:border-orange-500">
+                    <div class="flex items-center gap-3">
+                        <div class="text-2xl">💬</div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 chinese-text">${dialogue.title}</h4>
+                            <p class="text-xs text-gray-500">${dialogue.content.length} lines</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        function showDialogueSelection() {
+            hideAllScreens();
+            document.getElementById('dialogue-selection-screen').classList.remove('hidden');
+        }
+
+        function startDialogue(index) {
+            currentDialogueIndex = index;
+            allRevealed = false;
+            
+            hideAllScreens();
+            document.getElementById('dialogue-screen').classList.remove('hidden');
+            
+            renderDialogue();
+        }
+
+        function renderDialogue() {
+            const dialogue = currentDialogueList[currentDialogueIndex];
+            document.getElementById('dialogue-title').textContent = dialogue.title;
+            
+            const html = dialogue.content.map((line, index) => {
+                const speakerClass = line.speaker === 'A' ? '' : line.speaker === 'B' ? 'speaker-b' : 'speaker-c';
+                const speakerColor = line.speaker === 'A' ? 'text-indigo-600' : line.speaker === 'B' ? 'text-green-600' : 'text-amber-600';
+                
+                return `
+                    <div class="dialogue-line ${speakerClass}">
+                        <div class="flex items-start gap-2 mb-1">
+                            <span class="font-bold ${speakerColor}">${line.speaker}:</span>
+                            <p class="text-lg chinese-text text-gray-800 flex-1">${line.chinese}</p>
+                            <button onclick="pronounceDialogueLine('${line.chinese.replace(/'/g, "\\'")}')" class="text-base hover:scale-110 transition flex-shrink-0">🔊</button>
+                        </div>
+                        <div class="ml-6 space-y-1">
+                            <p class="hidden-text text-sm text-indigo-600" onclick="this.classList.toggle('revealed')">${line.pinyin}</p>
+                            <p class="hidden-text text-sm text-gray-600" onclick="this.classList.toggle('revealed')">${line.english}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('dialogue-content').innerHTML = html;
+        }
+
+        function pronounceDialogueLine(text) {
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
+            if (chineseVoice) utterance.voice = chineseVoice;
+            speechSynthesis.speak(utterance);
+        }
+
+        function toggleAllTranslations() {
+            allRevealed = !allRevealed;
+            document.querySelectorAll('#dialogue-content .hidden-text').forEach(el => {
+                if (allRevealed) {
+                    el.classList.add('revealed');
+                } else {
+                    el.classList.remove('revealed');
+                }
+            });
+        }
+
+        function prevDialogue() {
+            if (currentDialogueIndex > 0) {
+                currentDialogueIndex--;
+                allRevealed = false;
+                renderDialogue();
+            }
+        }
+
+        function nextDialogue() {
+            if (currentDialogueIndex < currentDialogueList.length - 1) {
+                currentDialogueIndex++;
+                allRevealed = false;
+                renderDialogue();
+            }
         }
 
         // Initialize
