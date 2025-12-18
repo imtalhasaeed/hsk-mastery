@@ -3,877 +3,1131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HSK Mastery Quiz</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>HSK Vocabulary Master</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #e11d48; /* HSK Red */
-            --primary-hover: #be123c;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-sub: #64748b;
-            --correct: #22c55e;
-            --wrong: #ef4444;
-            --accent: #3b82f6;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        /* Container & Card */
-        .app-container {
-            width: 100%;
-            max-width: 600px;
-            margin: auto;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 24px;
-            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
-            padding: 2rem;
-            overflow: hidden;
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        h1, h2, h3 { text-align: center; color: var(--text-main); }
-        h1 { font-size: 2rem; margin-bottom: 0.5rem; color: var(--primary); }
-        
-        .chinese-text {
-            font-family: 'Noto Sans SC', sans-serif;
-        }
-
-        /* Screen Visibility */
-        .screen { display: none; animation: fadeIn 0.4s ease; }
-        .screen.active { display: block; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- START SCREEN --- */
-        .form-group { margin-bottom: 1.5rem; }
-        .form-label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-sub); }
-        
-        .btn-group { display: flex; gap: 10px; }
-        .selection-btn {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--text-sub);
-            transition: all 0.2s;
-        }
-        .selection-btn.selected {
-            border-color: var(--primary);
-            background-color: #fff1f2;
-            color: var(--primary);
-        }
-
-        /* Range Slider */
-        .range-container { margin-top: 10px; }
-        input[type=range] {
-            width: 100%;
-            accent-color: var(--primary);
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 5px;
-            outline: none;
-        }
-        .range-value {
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin-top: 5px;
-        }
-
-        .start-btn {
-            width: 100%;
-            padding: 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
-            transition: transform 0.1s;
-        }
-        .start-btn:active { transform: scale(0.98); }
-
-        /* High Score Badge */
-        .high-score-badge {
-            background: #fff7ed;
-            color: #c2410c;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            font-weight: 600;
-        }
-
-        /* --- QUIZ SCREEN --- */
-        .quiz-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            color: var(--text-sub);
-        }
-        
-        .progress-bar {
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 4px;
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: var(--primary);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .question-box {
-            text-align: center;
-            margin-bottom: 2rem;
-            position: relative;
-        }
-        .main-q {
-            font-size: 3rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .main-q:hover { color: var(--primary); }
-        .sub-q {
-            font-size: 1.2rem;
-            color: var(--text-sub);
-            min-height: 1.5rem;
-        }
-        /* Audio Hint */
-        .audio-hint {
-            font-size: 0.8rem;
-            color: var(--accent);
-            margin-top: 5px;
-            opacity: 0.8;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .option-card {
-            background: white;
-            border: 2px solid #e2e8f0;
-            padding: 15px;
-            border-radius: 12px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 80px;
-            position: relative;
-        }
-        /* Keyboard shortcut badge */
-        .key-badge {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            font-size: 0.7rem;
-            background: #f1f5f9;
-            color: #94a3b8;
-            width: 18px;
-            height: 18px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .option-card:hover { border-color: var(--accent); background: #eff6ff; }
-        .option-card.correct { background: #dcfce7; border-color: var(--correct); color: #166534; }
-        .option-card.wrong { background: #fee2e2; border-color: var(--wrong); color: #991b1b; }
-        .option-card.disabled { pointer-events: none; opacity: 0.7; }
-        
-        .opt-main { font-size: 1.2rem; font-weight: bold; margin-bottom: 4px; }
-        .opt-sub { font-size: 0.85rem; color: inherit; opacity: 0.8; }
-
-        .controls {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 30px;
-        }
-        .icon-btn {
-            background: none;
-            border: none;
-            color: var(--text-sub);
-            cursor: pointer;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .icon-btn:hover { color: var(--text-main); }
-
-        /* --- RESULT SCREEN --- */
-        .score-display {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .big-score {
-            font-size: 4rem;
-            font-weight: 800;
-            background: linear-gradient(45deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1;
-        }
-        .score-label { color: var(--text-sub); font-size: 1.1rem; }
-
-        .mistakes-area {
-            background: #f1f5f9;
-            border-radius: 12px;
-            padding: 15px;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-        .mistake-item {
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--wrong);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .mistake-info h4 { margin: 0; font-size: 1.1rem; }
-        .mistake-info p { margin: 0; font-size: 0.85rem; color: var(--text-sub); }
-
-        /* Confetti Canvas */
-        #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
-        }
-        
-        @media (max-width: 500px) {
-            .options-grid { grid-template-columns: 1fr; }
-            .key-badge { display: none; } /* Hide shortcuts on mobile */
-        }
+        * { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+        .chinese-text { font-family: 'Noto Sans SC', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .pulse-btn { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); } }
+        .correct-answer { animation: correctPulse 0.5s ease; }
+        @keyframes correctPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .shake { animation: shake 0.5s ease; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .progress-bar { transition: width 0.5s ease; }
+        .chapter-grid::-webkit-scrollbar { height: 8px; }
+        .chapter-grid::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .chapter-grid::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
     </style>
 </head>
-<body>
-    <canvas id="confetti-canvas"></canvas>
-
-    <div class="app-container">
-        
-        <!-- 1. SETUP SCREEN -->
-        <div id="screen-setup" class="screen card active">
-            <h1>HSK Training</h1>
-            <p style="text-align:center; color:var(--text-sub); margin-bottom: 1rem;">Master your vocabulary</p>
-
-            <div class="high-score-badge" id="high-score-display">
-                <span>🏆 Personal Best: 0%</span>
-            </div>
-
-            <!-- Level Selection -->
-            <div class="form-group">
-                <label class="form-label">Select Level</label>
-                <div class="btn-group">
-                    <button class="selection-btn selected" onclick="selectLevel('hsk1', this)">HSK 1</button>
-                    <button class="selection-btn" onclick="selectLevel('hsk2', this)">HSK 2</button>
-                    <button class="selection-btn" onclick="selectLevel('combined', this)">Both</button>
-                </div>
-            </div>
-
-            <!-- Mode Selection -->
-            <div class="form-group">
-                <label class="form-label">Quiz Mode</label>
-                <div class="btn-group">
-                    <button class="selection-btn selected" onclick="selectMode('pinyin-to-char', this)">Pinyin ➔ 汉字</button>
-                    <button class="selection-btn" onclick="selectMode('char-to-pinyin', this)">汉字 ➔ Pinyin</button>
-                </div>
-            </div>
-
-            <!-- Question Count Slider -->
-            <div class="form-group">
-                <label class="form-label">Number of Questions</label>
-                <div class="range-container">
-                    <input type="range" id="q-slider" min="5" max="150" value="20" oninput="updateSliderVal(this.value)">
-                    <div class="range-value" id="q-display">20</div>
-                </div>
-            </div>
-
-            <button class="start-btn" onclick="initQuiz()">Start Test</button>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-4 px-6 shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold cursor-pointer flex items-center gap-2" onclick="showHome()">
+                <span class="text-3xl">🈶</span> HSK Vocabulary Master
+            </h1>
+            <button onclick="showScores()" class="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition">
+                <span>🏆</span> Best Scores
+            </button>
         </div>
+    </header>
 
-        <!-- 2. QUIZ SCREEN -->
-        <div id="screen-quiz" class="screen card">
-            <div class="quiz-header">
-                <span id="timer">00:00</span>
-                <span>Score: <span id="live-score" style="color:var(--primary); font-weight:bold;">0</span></span>
+    <!-- Main Content -->
+    <main id="app" class="max-w-6xl mx-auto p-6">
+        <!-- Home Screen -->
+        <div id="home-screen" class="fade-in">
+            <div class="text-center mb-12 mt-8">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">Master Your Chinese Vocabulary</h2>
+                <p class="text-xl text-gray-600">Based on HSK Standard Course Textbooks</p>
             </div>
 
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-fill"></div>
-            </div>
-
-            <div class="question-box" onclick="speakCurrentQuestion()">
-                <div class="main-q chinese-text" id="q-main">N/A</div>
-                <div class="audio-hint">🔊 Click text to listen</div>
-                <div class="sub-q" id="q-sub"></div>
-            </div>
-
-            <div class="options-grid" id="options-area">
-                <!-- Options injected here -->
-            </div>
-
-            <div class="controls">
-                <button class="icon-btn" onclick="goToSetup()">← Menu</button>
-                <button class="icon-btn" onclick="initQuiz()">↻ Restart</button>
+            <!-- HSK Level Cards -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div onclick="selectLevel('HSK1')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-5xl mb-4">📗</div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">HSK 1</h3>
+                    <p class="text-gray-600">Beginner Level</p>
+                    <p class="text-sm text-indigo-600 mt-2">15 Chapters • 157 words</p>
+                </div>
+                <div onclick="selectLevel('HSK2')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-5xl mb-4">📘</div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">HSK 2</h3>
+                    <p class="text-gray-600">Elementary Level</p>
+                    <p class="text-sm text-indigo-600 mt-2">15 Chapters • 180 words</p>
+                </div>
+                <div onclick="selectLevel('HSK3')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-5xl mb-4">📙</div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">HSK 3</h3>
+                    <p class="text-gray-600">Intermediate Level</p>
+                    <p class="text-sm text-indigo-600 mt-2">3 Chapters • 50 words</p>
+                </div>
+                <div onclick="selectLevel('Combined')" class="card-hover cursor-pointer bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-8 shadow-lg text-white">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h3 class="text-2xl font-bold mb-2">Combined</h3>
+                    <p class="text-white/80">All Levels Mixed</p>
+                    <p class="text-sm text-white/90 mt-2">387 words • 350 questions</p>
+                </div>
             </div>
         </div>
 
-        <!-- 3. RESULT SCREEN -->
-        <div id="screen-result" class="screen card">
-            <h1>Test Complete!</h1>
-            
-            <div class="score-display">
-                <div class="big-score" id="final-score">95%</div>
-                <div class="score-label" id="final-text">You got 19 out of 20</div>
+        <!-- Chapter Selection Screen -->
+        <div id="chapter-screen" class="hidden fade-in">
+            <button onclick="showHome()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Levels
+            </button>
+            <div class="text-center mb-8">
+                <h2 id="level-title" class="text-3xl font-bold text-gray-800 mb-2">Select Chapter</h2>
+                <p class="text-gray-600">Choose which chapter to practice</p>
             </div>
-
-            <div id="mistakes-container" style="display:none;">
-                <h3 style="text-align:left; margin-bottom:10px; font-size:1rem;">Review Mistakes</h3>
-                <div class="mistakes-area" id="mistakes-list">
-                    <!-- Mistakes injected here -->
-                </div>
-            </div>
-
-            <button class="start-btn" onclick="goToSetup()">Back to Main Menu</button>
+            <div id="chapter-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8"></div>
         </div>
 
+        <!-- Mode Selection Screen -->
+        <div id="mode-screen" class="hidden fade-in">
+            <button id="mode-back-btn" onclick="showChapters()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                <span id="mode-back-text">Back to Chapters</span>
+            </button>
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Select Test Mode</h2>
+                <p class="text-gray-600" id="mode-subtitle">HSK1 - Chapter 1</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div onclick="startQuiz('charToPinyin')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500 text-center">
+                    <div class="text-6xl mb-4 chinese-text">汉</div>
+                    <div class="text-3xl mb-4">↓</div>
+                    <div class="text-2xl mb-4">hàn</div>
+                    <h3 class="text-xl font-bold text-gray-800">Characters → Pinyin</h3>
+                    <p class="text-gray-600 mt-2">See characters, guess the pinyin</p>
+                </div>
+                <div onclick="startQuiz('pinyinToChar')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500 text-center">
+                    <div class="text-4xl mb-4">hàn yǔ</div>
+                    <div class="text-3xl mb-4">↓</div>
+                    <div class="text-5xl mb-4 chinese-text">汉语</div>
+                    <h3 class="text-xl font-bold text-gray-800">Pinyin → Characters</h3>
+                    <p class="text-gray-600 mt-2">See pinyin, guess the characters</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden fade-in">
+            <div class="max-w-2xl mx-auto">
+                <button onclick="confirmQuit()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Quit Quiz
+                </button>
+                
+                <!-- Progress Bar -->
+                <div class="bg-gray-200 rounded-full h-3 mb-6">
+                    <div id="progress-bar" class="progress-bar gradient-bg h-3 rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-sm text-gray-600 mb-8">
+                    <span id="question-counter">Question 1 of 10</span>
+                    <span id="score-display">Score: 0</span>
+                </div>
+
+                <!-- Question Card -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
+                    <div class="flex justify-between items-start mb-6">
+                        <span id="quiz-level-badge" class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">HSK1</span>
+                        <button onclick="pronounceWord()" class="text-2xl hover:scale-110 transition" title="Listen">🔊</button>
+                    </div>
+                    <div id="question-display" class="text-center py-8">
+                        <div id="question-text" class="text-5xl font-bold chinese-text mb-4">你好</div>
+                    </div>
+                    
+                    <!-- Meaning (Hidden until answered) -->
+                    <div id="meaning-display" class="hidden text-center py-4 bg-gray-50 rounded-xl mt-4">
+                        <p class="text-gray-600 text-sm mb-1">Meaning:</p>
+                        <p id="word-meaning" class="text-xl font-medium text-gray-800">Hello</p>
+                    </div>
+                </div>
+
+                <!-- Answer Options -->
+                <div id="options-container" class="grid grid-cols-2 gap-4 mb-6"></div>
+
+                <!-- Next Button -->
+                <button id="next-btn" onclick="nextQuestion()" class="hidden w-full gradient-bg text-white py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition">
+                    Next Question →
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="hidden fade-in">
+            <div class="max-w-lg mx-auto text-center">
+                <div id="results-emoji" class="text-8xl mb-6">🎉</div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
+                <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
+                    <div class="text-6xl font-bold gradient-bg bg-clip-text text-transparent mb-2" id="final-score">80%</div>
+                    <p class="text-gray-600 mb-4" id="score-text">You got 8 out of 10 correct!</p>
+                    <div id="new-best" class="hidden bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg font-medium mb-4">
+                        🏆 New Best Score!
+                    </div>
+                    <p class="text-sm text-gray-500" id="best-score-display">Best score for this section: 80%</p>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="restartQuiz()" class="flex-1 gradient-bg text-white py-4 rounded-xl font-semibold hover:opacity-90 transition">
+                        Try Again
+                    </button>
+                    <button onclick="showHome()" class="flex-1 bg-gray-200 text-gray-800 py-4 rounded-xl font-semibold hover:bg-gray-300 transition">
+                        Home
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scores Screen -->
+        <div id="scores-screen" class="hidden fade-in">
+            <button onclick="showHome()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Back to Home
+            </button>
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">🏆 Best Scores</h2>
+                <p class="text-gray-600">Your personal records</p>
+            </div>
+            <div id="scores-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <div id="no-scores" class="hidden text-center py-12">
+                <div class="text-6xl mb-4">📝</div>
+                <p class="text-gray-600">No scores yet. Start a quiz to track your progress!</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Quit Confirmation Modal -->
+    <div id="quit-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-sm mx-4 text-center">
+            <div class="text-5xl mb-4">⚠️</div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Quit Quiz?</h3>
+            <p class="text-gray-600 mb-6">Your progress will be lost.</p>
+            <div class="flex gap-4">
+                <button onclick="closeQuitModal()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold hover:bg-gray-300 transition">
+                    Continue
+                </button>
+                <button onclick="quitQuiz()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition">
+                    Quit
+                </button>
+            </div>
+        </div>
     </div>
 
-<script>
-/* --- DATA: HSK 1 & 2 VOCABULARY --- */
-const hsk1Data = [
-    { hanzi: "爱", pinyin: "ài", en: "love" }, { hanzi: "八", pinyin: "bā", en: "eight" },
-    { hanzi: "爸爸", pinyin: "bàba", en: "dad" }, { hanzi: "杯子", pinyin: "bēizi", en: "cup" },
-    { hanzi: "北京", pinyin: "Běijīng", en: "Beijing" }, { hanzi: "本", pinyin: "běn", en: "measure word for books" },
-    { hanzi: "不客气", pinyin: "búkèqi", en: "you're welcome" }, { hanzi: "不", pinyin: "bù", en: "no / not" },
-    { hanzi: "菜", pinyin: "cài", en: "dish / vegetable" }, { hanzi: "茶", pinyin: "chá", en: "tea" },
-    { hanzi: "吃", pinyin: "chī", en: "eat" }, { hanzi: "出租车", pinyin: "chūzūchē", en: "taxi" },
-    { hanzi: "打电话", pinyin: "dǎ diànhuà", en: "make phone call" }, { hanzi: "大", pinyin: "dà", en: "big" },
-    { hanzi: "的", pinyin: "de", en: "of / 's" }, { hanzi: "点", pinyin: "diǎn", en: "o'clock" },
-    { hanzi: "电脑", pinyin: "diànnǎo", en: "computer" }, { hanzi: "电视", pinyin: "diànshì", en: "TV" },
-    { hanzi: "电影", pinyin: "diànyǐng", en: "movie" }, { hanzi: "东西", pinyin: "dōngxi", en: "thing" },
-    { hanzi: "都", pinyin: "dōu", en: "all" }, { hanzi: "读", pinyin: "dú", en: "read" },
-    { hanzi: "对不起", pinyin: "duìbuqǐ", en: "sorry" }, { hanzi: "多", pinyin: "duō", en: "many" },
-    { hanzi: "多少", pinyin: "duōshao", en: "how many" }, { hanzi: "儿子", pinyin: "érzi", en: "son" },
-    { hanzi: "二", pinyin: "èr", en: "two" }, { hanzi: "饭店", pinyin: "fàndiàn", en: "restaurant" },
-    { hanzi: "飞机", pinyin: "fēijī", en: "airplane" }, { hanzi: "分钟", pinyin: "fēnzhōng", en: "minute" },
-    { hanzi: "高兴", pinyin: "gāoxìng", en: "happy" }, { hanzi: "个", pinyin: "gè", en: "measure word" },
-    { hanzi: "工作", pinyin: "gōngzuò", en: "work" }, { hanzi: "狗", pinyin: "gǒu", en: "dog" },
-    { hanzi: "汉语", pinyin: "Hànyǔ", en: "Chinese language" }, { hanzi: "好", pinyin: "hǎo", en: "good" },
-    { hanzi: "喝", pinyin: "hē", en: "drink" }, { hanzi: "和", pinyin: "hé", en: "and" },
-    { hanzi: "很", pinyin: "hěn", en: "very" }, { hanzi: "后面", pinyin: "hòumiàn", en: "behind" },
-    { hanzi: "回", pinyin: "huí", en: "return" }, { hanzi: "会", pinyin: "huì", en: "can / know how to" },
-    { hanzi: "几", pinyin: "jǐ", en: "how many" }, { hanzi: "家", pinyin: "jiā", en: "home / family" },
-    { hanzi: "叫", pinyin: "jiào", en: "called" }, { hanzi: "今天", pinyin: "jīntiān", en: "today" },
-    { hanzi: "九", pinyin: "jiǔ", en: "nine" }, { hanzi: "开", pinyin: "kāi", en: "open / drive" },
-    { hanzi: "看", pinyin: "kàn", en: "look / watch" }, { hanzi: "看见", pinyin: "kànjiàn", en: "see" },
-    { hanzi: "块", pinyin: "kuài", en: "chunk / yuan" }, { hanzi: "来", pinyin: "lái", en: "come" },
-    { hanzi: "老师", pinyin: "lǎoshī", en: "teacher" }, { hanzi: "了", pinyin: "le", en: "particle" },
-    { hanzi: "冷", pinyin: "lěng", en: "cold" }, { hanzi: "里", pinyin: "lǐ", en: "inside" },
-    { hanzi: "零", pinyin: "líng", en: "zero" }, { hanzi: "六", pinyin: "liù", en: "six" },
-    { hanzi: "妈妈", pinyin: "māma", en: "mom" }, { hanzi: "吗", pinyin: "ma", en: "?" },
-    { hanzi: "买", pinyin: "mǎi", en: "buy" }, { hanzi: "猫", pinyin: "māo", en: "cat" },
-    { hanzi: "没", pinyin: "méi", en: "no" }, { hanzi: "没关系", pinyin: "méiguānxì", en: "no problem" },
-    { hanzi: "米饭", pinyin: "mǐfàn", en: "rice" }, { hanzi: "明天", pinyin: "míngtiān", en: "tomorrow" },
-    { hanzi: "名字", pinyin: "míngzi", en: "name" }, { hanzi: "哪", pinyin: "nǎ", en: "which" },
-    { hanzi: "哪儿", pinyin: "nǎr", en: "where" }, { hanzi: "那", pinyin: "nà", en: "that" },
-    { hanzi: "呢", pinyin: "ne", en: "particle" }, { hanzi: "能", pinyin: "néng", en: "can / be able to" },
-    { hanzi: "你", pinyin: "nǐ", en: "you" }, { hanzi: "年", pinyin: "nián", en: "year" },
-    { hanzi: "女儿", pinyin: "nǚ'ér", en: "daughter" }, { hanzi: "朋友", pinyin: "péngyou", en: "friend" },
-    { hanzi: "漂亮", pinyin: "piàoliang", en: "beautiful" }, { hanzi: "苹果", pinyin: "píngguǒ", en: "apple" },
-    { hanzi: "七", pinyin: "qī", en: "seven" }, { hanzi: "钱", pinyin: "qián", en: "money" },
-    { hanzi: "前面", pinyin: "qiánmiàn", en: "front" }, { hanzi: "请", pinyin: "qǐng", en: "please" },
-    { hanzi: "去", pinyin: "qù", en: "go" }, { hanzi: "热", pinyin: "rè", en: "hot" },
-    { hanzi: "人", pinyin: "rén", en: "person" }, { hanzi: "认识", pinyin: "rènshi", en: "know (person)" },
-    { hanzi: "三", pinyin: "sān", en: "three" }, { hanzi: "商店", pinyin: "shāngdiàn", en: "shop" },
-    { hanzi: "上", pinyin: "shàng", en: "up" }, { hanzi: "上午", pinyin: "shàngwǔ", en: "morning" },
-    { hanzi: "少", pinyin: "shǎo", en: "few" }, { hanzi: "谁", pinyin: "shéi", en: "who" },
-    { hanzi: "什么", pinyin: "shénme", en: "what" }, { hanzi: "十", pinyin: "shí", en: "ten" },
-    { hanzi: "时候", pinyin: "shíhou", en: "time" }, { hanzi: "是", pinyin: "shì", en: "is/am/are" },
-    { hanzi: "书", pinyin: "shū", en: "book" }, { hanzi: "水", pinyin: "shuǐ", en: "water" },
-    { hanzi: "水果", pinyin: "shuǐguǒ", en: "fruit" }, { hanzi: "睡觉", pinyin: "shuìjiào", en: "sleep" },
-    { hanzi: "说", pinyin: "shuō", en: "speak" }, { hanzi: "四", pinyin: "sì", en: "four" },
-    { hanzi: "岁", pinyin: "suì", en: "years old" }, { hanzi: "他", pinyin: "tā", en: "he" },
-    { hanzi: "她", pinyin: "tā", en: "she" }, { hanzi: "太", pinyin: "tài", en: "too" },
-    { hanzi: "天气", pinyin: "tiānqì", en: "weather" }, { hanzi: "听", pinyin: "tīng", en: "listen" },
-    { hanzi: "同学", pinyin: "tóngxué", en: "classmate" }, { hanzi: "喂", pinyin: "wèi", en: "hello (phone)" },
-    { hanzi: "我", pinyin: "wǒ", en: "I / me" }, { hanzi: "我们", pinyin: "wǒmen", en: "we" },
-    { hanzi: "五", pinyin: "wǔ", en: "five" }, { hanzi: "喜欢", pinyin: "xǐhuan", en: "like" },
-    { hanzi: "下", pinyin: "xià", en: "down" }, { hanzi: "下午", pinyin: "xiàwǔ", en: "afternoon" },
-    { hanzi: "下雨", pinyin: "xiàyǔ", en: "rain" }, { hanzi: "先生", pinyin: "xiānsheng", en: "Mr." },
-    { hanzi: "现在", pinyin: "xiànzài", en: "now" }, { hanzi: "想", pinyin: "xiǎng", en: "want/think" },
-    { hanzi: "小", pinyin: "xiǎo", en: "small" }, { hanzi: "小姐", pinyin: "xiǎojiě", en: "Miss" },
-    { hanzi: "些", pinyin: "xiē", en: "some" }, { hanzi: "写", pinyin: "xiě", en: "write" },
-    { hanzi: "谢谢", pinyin: "xièxie", en: "thanks" }, { hanzi: "星期", pinyin: "xīngqī", en: "week" },
-    { hanzi: "学生", pinyin: "xuésheng", en: "student" }, { hanzi: "学习", pinyin: "xuéxí", en: "study" },
-    { hanzi: "学校", pinyin: "xuéxiào", en: "school" }, { hanzi: "一", pinyin: "yī", en: "one" },
-    { hanzi: "一点儿", pinyin: "yìdiǎnr", en: "a little bit" }, { hanzi: "衣服", pinyin: "yīfu", en: "clothes" },
-    { hanzi: "医生", pinyin: "yīshēng", en: "doctor" }, { hanzi: "医院", pinyin: "yīyuàn", en: "hospital" },
-    { hanzi: "椅子", pinyin: "yǐzi", en: "chair" }, { hanzi: "有", pinyin: "yǒu", en: "have" },
-    { hanzi: "月", pinyin: "yuè", en: "month" }, { hanzi: "再见", pinyin: "zàijiàn", en: "goodbye" },
-    { hanzi: "在", pinyin: "zài", en: "at" }, { hanzi: "怎么", pinyin: "zěnme", en: "how" },
-    { hanzi: "怎么样", pinyin: "zěnmeyàng", en: "how about" }, { hanzi: "这", pinyin: "zhè", en: "this" },
-    { hanzi: "中国", pinyin: "Zhōngguó", en: "China" }, { hanzi: "中午", pinyin: "zhōngwǔ", en: "noon" },
-    { hanzi: "住", pinyin: "zhù", en: "live" }, { hanzi: "桌子", pinyin: "zhuōzi", en: "table" },
-    { hanzi: "字", pinyin: "zì", en: "character" }, { hanzi: "昨天", pinyin: "zuótiān", en: "yesterday" },
-    { hanzi: "坐", pinyin: "zuò", en: "sit" }, { hanzi: "做", pinyin: "zuò", en: "do" }
-];
+    <script>
+        // HSK Standard Course Vocabulary - Official Textbook Content
+        const vocabulary = {
+            HSK1: {
+                1: [
+                    { char: "你", pinyin: "nǐ", meaning: "you" },
+                    { char: "好", pinyin: "hǎo", meaning: "good; fine" },
+                    { char: "你好", pinyin: "nǐ hǎo", meaning: "hello" },
+                    { char: "您", pinyin: "nín", meaning: "you (polite)" },
+                    { char: "你们", pinyin: "nǐmen", meaning: "you (plural)" },
+                    { char: "对不起", pinyin: "duìbuqǐ", meaning: "sorry" },
+                    { char: "没关系", pinyin: "méi guānxi", meaning: "it's okay; no problem" }
+                ],
+                2: [
+                    { char: "谢谢", pinyin: "xièxie", meaning: "thank you" },
+                    { char: "不", pinyin: "bù", meaning: "no; not" },
+                    { char: "不客气", pinyin: "bú kèqi", meaning: "you're welcome" },
+                    { char: "再见", pinyin: "zàijiàn", meaning: "goodbye" }
+                ],
+                3: [
+                    { char: "叫", pinyin: "jiào", meaning: "to be called" },
+                    { char: "什么", pinyin: "shénme", meaning: "what" },
+                    { char: "名字", pinyin: "míngzi", meaning: "name" },
+                    { char: "我", pinyin: "wǒ", meaning: "I; me" },
+                    { char: "是", pinyin: "shì", meaning: "to be" },
+                    { char: "老师", pinyin: "lǎoshī", meaning: "teacher" },
+                    { char: "吗", pinyin: "ma", meaning: "question particle" },
+                    { char: "学生", pinyin: "xuésheng", meaning: "student" },
+                    { char: "人", pinyin: "rén", meaning: "person" },
+                    { char: "中国", pinyin: "Zhōngguó", meaning: "China" },
+                    { char: "美国", pinyin: "Měiguó", meaning: "United States" }
+                ],
+                4: [
+                    { char: "她", pinyin: "tā", meaning: "she; her" },
+                    { char: "谁", pinyin: "shéi", meaning: "who" },
+                    { char: "的", pinyin: "de", meaning: "possessive particle" },
+                    { char: "汉语", pinyin: "Hànyǔ", meaning: "Chinese language" },
+                    { char: "哪", pinyin: "nǎ", meaning: "which" },
+                    { char: "国", pinyin: "guó", meaning: "country" },
+                    { char: "呢", pinyin: "ne", meaning: "particle (what about?)" },
+                    { char: "他", pinyin: "tā", meaning: "he; him" },
+                    { char: "同学", pinyin: "tóngxué", meaning: "classmate" },
+                    { char: "朋友", pinyin: "péngyou", meaning: "friend" }
+                ],
+                5: [
+                    { char: "家", pinyin: "jiā", meaning: "family; home" },
+                    { char: "有", pinyin: "yǒu", meaning: "to have" },
+                    { char: "口", pinyin: "kǒu", meaning: "measure word for family members" },
+                    { char: "女儿", pinyin: "nǚ'ér", meaning: "daughter" },
+                    { char: "几", pinyin: "jǐ", meaning: "how many" },
+                    { char: "岁", pinyin: "suì", meaning: "year (of age)" },
+                    { char: "了", pinyin: "le", meaning: "particle indicating change" },
+                    { char: "今年", pinyin: "jīnnián", meaning: "this year" },
+                    { char: "多", pinyin: "duō", meaning: "many; how (old)" },
+                    { char: "大", pinyin: "dà", meaning: "big" }
+                ],
+                6: [
+                    { char: "会", pinyin: "huì", meaning: "can; know how to" },
+                    { char: "说", pinyin: "shuō", meaning: "to speak" },
+                    { char: "妈妈", pinyin: "māma", meaning: "mother" },
+                    { char: "菜", pinyin: "cài", meaning: "dish; cuisine" },
+                    { char: "很", pinyin: "hěn", meaning: "very" },
+                    { char: "好吃", pinyin: "hǎochī", meaning: "delicious" },
+                    { char: "做", pinyin: "zuò", meaning: "to make; to do" },
+                    { char: "写", pinyin: "xiě", meaning: "to write" },
+                    { char: "汉字", pinyin: "Hànzì", meaning: "Chinese character" },
+                    { char: "字", pinyin: "zì", meaning: "character" },
+                    { char: "怎么", pinyin: "zěnme", meaning: "how" },
+                    { char: "读", pinyin: "dú", meaning: "to read" }
+                ],
+                7: [
+                    { char: "请", pinyin: "qǐng", meaning: "please" },
+                    { char: "问", pinyin: "wèn", meaning: "to ask" },
+                    { char: "今天", pinyin: "jīntiān", meaning: "today" },
+                    { char: "号", pinyin: "hào", meaning: "date; number" },
+                    { char: "月", pinyin: "yuè", meaning: "month" },
+                    { char: "星期", pinyin: "xīngqī", meaning: "week" },
+                    { char: "昨天", pinyin: "zuótiān", meaning: "yesterday" },
+                    { char: "明天", pinyin: "míngtiān", meaning: "tomorrow" },
+                    { char: "去", pinyin: "qù", meaning: "to go" },
+                    { char: "学校", pinyin: "xuéxiào", meaning: "school" },
+                    { char: "看", pinyin: "kàn", meaning: "to look; to watch; to read" },
+                    { char: "书", pinyin: "shū", meaning: "book" }
+                ],
+                8: [
+                    { char: "想", pinyin: "xiǎng", meaning: "to want; to think" },
+                    { char: "喝", pinyin: "hē", meaning: "to drink" },
+                    { char: "茶", pinyin: "chá", meaning: "tea" },
+                    { char: "吃", pinyin: "chī", meaning: "to eat" },
+                    { char: "米饭", pinyin: "mǐfàn", meaning: "cooked rice" },
+                    { char: "下午", pinyin: "xiàwǔ", meaning: "afternoon" },
+                    { char: "商店", pinyin: "shāngdiàn", meaning: "shop; store" },
+                    { char: "买", pinyin: "mǎi", meaning: "to buy" },
+                    { char: "个", pinyin: "gè", meaning: "general measure word" },
+                    { char: "杯子", pinyin: "bēizi", meaning: "cup" },
+                    { char: "这", pinyin: "zhè", meaning: "this" },
+                    { char: "多少", pinyin: "duōshao", meaning: "how many; how much" },
+                    { char: "钱", pinyin: "qián", meaning: "money" },
+                    { char: "块", pinyin: "kuài", meaning: "measure word for money (yuan)" },
+                    { char: "那", pinyin: "nà", meaning: "that" }
+                ],
+                9: [
+                    { char: "小", pinyin: "xiǎo", meaning: "small" },
+                    { char: "猫", pinyin: "māo", meaning: "cat" },
+                    { char: "在", pinyin: "zài", meaning: "to be at (location)" },
+                    { char: "哪儿", pinyin: "nǎr", meaning: "where" },
+                    { char: "狗", pinyin: "gǒu", meaning: "dog" },
+                    { char: "椅子", pinyin: "yǐzi", meaning: "chair" },
+                    { char: "下面", pinyin: "xiàmiàn", meaning: "under; below" },
+                    { char: "工作", pinyin: "gōngzuò", meaning: "job; to work" },
+                    { char: "儿子", pinyin: "érzi", meaning: "son" },
+                    { char: "医院", pinyin: "yīyuàn", meaning: "hospital" },
+                    { char: "医生", pinyin: "yīshēng", meaning: "doctor" },
+                    { char: "爸爸", pinyin: "bàba", meaning: "father" }
+                ],
+                10: [
+                    { char: "桌子", pinyin: "zhuōzi", meaning: "desk; table" },
+                    { char: "上", pinyin: "shàng", meaning: "up; above" },
+                    { char: "电脑", pinyin: "diànnǎo", meaning: "computer" },
+                    { char: "和", pinyin: "hé", meaning: "and" },
+                    { char: "本", pinyin: "běn", meaning: "measure word for books" },
+                    { char: "里", pinyin: "lǐ", meaning: "inside" },
+                    { char: "前面", pinyin: "qiánmiàn", meaning: "front" },
+                    { char: "后面", pinyin: "hòumiàn", meaning: "back; behind" },
+                    { char: "这儿", pinyin: "zhèr", meaning: "here" },
+                    { char: "没有", pinyin: "méiyǒu", meaning: "to not have" },
+                    { char: "能", pinyin: "néng", meaning: "can; be able to" },
+                    { char: "坐", pinyin: "zuò", meaning: "to sit" }
+                ],
+                11: [
+                    { char: "现在", pinyin: "xiànzài", meaning: "now" },
+                    { char: "点", pinyin: "diǎn", meaning: "o'clock" },
+                    { char: "分", pinyin: "fēn", meaning: "minute" },
+                    { char: "中午", pinyin: "zhōngwǔ", meaning: "noon" },
+                    { char: "吃饭", pinyin: "chīfàn", meaning: "to eat a meal" },
+                    { char: "时候", pinyin: "shíhou", meaning: "time; moment" },
+                    { char: "回", pinyin: "huí", meaning: "to return" },
+                    { char: "我们", pinyin: "wǒmen", meaning: "we; us" },
+                    { char: "电影", pinyin: "diànyǐng", meaning: "movie" },
+                    { char: "住", pinyin: "zhù", meaning: "to live" },
+                    { char: "前", pinyin: "qián", meaning: "before" },
+                    { char: "北京", pinyin: "Běijīng", meaning: "Beijing" }
+                ],
+                12: [
+                    { char: "天气", pinyin: "tiānqì", meaning: "weather" },
+                    { char: "怎么样", pinyin: "zěnmeyàng", meaning: "how is it" },
+                    { char: "太", pinyin: "tài", meaning: "too; extremely" },
+                    { char: "热", pinyin: "rè", meaning: "hot" },
+                    { char: "冷", pinyin: "lěng", meaning: "cold" },
+                    { char: "下雨", pinyin: "xiàyǔ", meaning: "to rain" },
+                    { char: "小姐", pinyin: "xiǎojiě", meaning: "Miss" },
+                    { char: "来", pinyin: "lái", meaning: "to come" },
+                    { char: "身体", pinyin: "shēntǐ", meaning: "body; health" },
+                    { char: "爱", pinyin: "ài", meaning: "to love" },
+                    { char: "些", pinyin: "xiē", meaning: "some" },
+                    { char: "水果", pinyin: "shuǐguǒ", meaning: "fruit" },
+                    { char: "水", pinyin: "shuǐ", meaning: "water" }
+                ],
+                13: [
+                    { char: "喂", pinyin: "wéi", meaning: "hello (on phone)" },
+                    { char: "也", pinyin: "yě", meaning: "also" },
+                    { char: "学习", pinyin: "xuéxí", meaning: "to study" },
+                    { char: "上午", pinyin: "shàngwǔ", meaning: "morning" },
+                    { char: "睡觉", pinyin: "shuìjiào", meaning: "to sleep" },
+                    { char: "电视", pinyin: "diànshì", meaning: "television" },
+                    { char: "喜欢", pinyin: "xǐhuan", meaning: "to like" },
+                    { char: "给", pinyin: "gěi", meaning: "to; for; to give" },
+                    { char: "打电话", pinyin: "dǎ diànhuà", meaning: "to make a phone call" },
+                    { char: "吧", pinyin: "ba", meaning: "suggestion particle" }
+                ],
+                14: [
+                    { char: "东西", pinyin: "dōngxi", meaning: "thing; stuff" },
+                    { char: "一点儿", pinyin: "yìdiǎnr", meaning: "a little bit" },
+                    { char: "苹果", pinyin: "píngguǒ", meaning: "apple" },
+                    { char: "看见", pinyin: "kànjiàn", meaning: "to see" },
+                    { char: "先生", pinyin: "xiānsheng", meaning: "Mr.; sir" },
+                    { char: "开", pinyin: "kāi", meaning: "to drive; to open" },
+                    { char: "车", pinyin: "chē", meaning: "car" },
+                    { char: "回来", pinyin: "huílai", meaning: "to come back" },
+                    { char: "分钟", pinyin: "fēnzhōng", meaning: "minute" },
+                    { char: "后", pinyin: "hòu", meaning: "after" },
+                    { char: "张", pinyin: "zhāng", meaning: "measure word for flat objects" },
+                    { char: "衣服", pinyin: "yīfu", meaning: "clothes" },
+                    { char: "漂亮", pinyin: "piàoliang", meaning: "beautiful" },
+                    { char: "啊", pinyin: "a", meaning: "ah (particle)" },
+                    { char: "少", pinyin: "shǎo", meaning: "few; little" },
+                    { char: "不少", pinyin: "bùshǎo", meaning: "quite a few; many" },
+                    { char: "这些", pinyin: "zhèxiē", meaning: "these" },
+                    { char: "都", pinyin: "dōu", meaning: "all; both" }
+                ],
+                15: [
+                    { char: "认识", pinyin: "rènshi", meaning: "to know; to meet" },
+                    { char: "年", pinyin: "nián", meaning: "year" },
+                    { char: "大学", pinyin: "dàxué", meaning: "university" },
+                    { char: "饭店", pinyin: "fàndiàn", meaning: "hotel; restaurant" },
+                    { char: "出租车", pinyin: "chūzūchē", meaning: "taxi" },
+                    { char: "一起", pinyin: "yìqǐ", meaning: "together" },
+                    { char: "高兴", pinyin: "gāoxìng", meaning: "happy" },
+                    { char: "听", pinyin: "tīng", meaning: "to listen" },
+                    { char: "飞机", pinyin: "fēijī", meaning: "airplane" }
+                ]
+            },
+            HSK2: {
+                1: [
+                    { char: "旅游", pinyin: "lǚyóu", meaning: "to travel" },
+                    { char: "觉得", pinyin: "juéde", meaning: "to feel; to think" },
+                    { char: "最", pinyin: "zuì", meaning: "most" },
+                    { char: "为什么", pinyin: "wèishénme", meaning: "why" },
+                    { char: "也", pinyin: "yě", meaning: "also" },
+                    { char: "运动", pinyin: "yùndòng", meaning: "sport; exercise" },
+                    { char: "踢足球", pinyin: "tī zúqiú", meaning: "to play soccer" },
+                    { char: "一起", pinyin: "yìqǐ", meaning: "together" },
+                    { char: "要", pinyin: "yào", meaning: "to want; to be going to" },
+                    { char: "新", pinyin: "xīn", meaning: "new" },
+                    { char: "它", pinyin: "tā", meaning: "it" },
+                    { char: "眼睛", pinyin: "yǎnjing", meaning: "eyes" }
+                ],
+                2: [
+                    { char: "生病", pinyin: "shēngbìng", meaning: "to get sick" },
+                    { char: "每", pinyin: "měi", meaning: "every" },
+                    { char: "早上", pinyin: "zǎoshang", meaning: "morning" },
+                    { char: "跑步", pinyin: "pǎobù", meaning: "to run" },
+                    { char: "起床", pinyin: "qǐchuáng", meaning: "to get up" },
+                    { char: "药", pinyin: "yào", meaning: "medicine" },
+                    { char: "身体", pinyin: "shēntǐ", meaning: "body; health" },
+                    { char: "出院", pinyin: "chūyuàn", meaning: "to leave hospital" },
+                    { char: "出", pinyin: "chū", meaning: "to go out" },
+                    { char: "高", pinyin: "gāo", meaning: "tall; high" },
+                    { char: "米", pinyin: "mǐ", meaning: "meter" },
+                    { char: "知道", pinyin: "zhīdao", meaning: "to know" },
+                    { char: "休息", pinyin: "xiūxi", meaning: "to rest" },
+                    { char: "忙", pinyin: "máng", meaning: "busy" },
+                    { char: "时间", pinyin: "shíjiān", meaning: "time" }
+                ],
+                3: [
+                    { char: "手表", pinyin: "shǒubiǎo", meaning: "watch" },
+                    { char: "千", pinyin: "qiān", meaning: "thousand" },
+                    { char: "报纸", pinyin: "bàozhǐ", meaning: "newspaper" },
+                    { char: "送", pinyin: "sòng", meaning: "to send; to deliver" },
+                    { char: "一下", pinyin: "yíxià", meaning: "a little bit" },
+                    { char: "牛奶", pinyin: "niúnǎi", meaning: "milk" },
+                    { char: "房间", pinyin: "fángjiān", meaning: "room" },
+                    { char: "丈夫", pinyin: "zhàngfu", meaning: "husband" },
+                    { char: "旁边", pinyin: "pángbiān", meaning: "beside" },
+                    { char: "真", pinyin: "zhēn", meaning: "really" },
+                    { char: "粉色", pinyin: "fěnsè", meaning: "pink" },
+                    { char: "粉", pinyin: "fěn", meaning: "pink; powder" },
+                    { char: "颜色", pinyin: "yánsè", meaning: "color" },
+                    { char: "左边", pinyin: "zuǒbiān", meaning: "left side" },
+                    { char: "红色", pinyin: "hóngsè", meaning: "red" }
+                ],
+                4: [
+                    { char: "生日", pinyin: "shēngrì", meaning: "birthday" },
+                    { char: "快乐", pinyin: "kuàilè", meaning: "happy" },
+                    { char: "给", pinyin: "gěi", meaning: "to give" },
+                    { char: "接", pinyin: "jiē", meaning: "to receive; to pick up" },
+                    { char: "晚上", pinyin: "wǎnshang", meaning: "evening" },
+                    { char: "问", pinyin: "wèn", meaning: "to ask" },
+                    { char: "非常", pinyin: "fēicháng", meaning: "very" },
+                    { char: "开始", pinyin: "kāishǐ", meaning: "to start" },
+                    { char: "已经", pinyin: "yǐjīng", meaning: "already" },
+                    { char: "长", pinyin: "cháng", meaning: "long" },
+                    { char: "两", pinyin: "liǎng", meaning: "two" },
+                    { char: "帮", pinyin: "bāng", meaning: "to help" },
+                    { char: "介绍", pinyin: "jièshào", meaning: "to introduce" }
+                ],
+                5: [
+                    { char: "外面", pinyin: "wàimiàn", meaning: "outside" },
+                    { char: "准备", pinyin: "zhǔnbèi", meaning: "to prepare" },
+                    { char: "就", pinyin: "jiù", meaning: "then; just" },
+                    { char: "鱼", pinyin: "yú", meaning: "fish" },
+                    { char: "吧", pinyin: "ba", meaning: "particle (suggestion)" },
+                    { char: "件", pinyin: "jiàn", meaning: "measure word for clothes" },
+                    { char: "还", pinyin: "hái", meaning: "still; also" },
+                    { char: "可以", pinyin: "kěyǐ", meaning: "can; may" },
+                    { char: "不错", pinyin: "búcuò", meaning: "not bad" },
+                    { char: "考试", pinyin: "kǎoshì", meaning: "exam" },
+                    { char: "意思", pinyin: "yìsi", meaning: "meaning" },
+                    { char: "咖啡", pinyin: "kāfēi", meaning: "coffee" },
+                    { char: "对", pinyin: "duì", meaning: "to; for (preposition)" },
+                    { char: "以后", pinyin: "yǐhòu", meaning: "after" }
+                ],
+                6: [
+                    { char: "门", pinyin: "mén", meaning: "door" },
+                    { char: "外", pinyin: "wài", meaning: "outer; outside" },
+                    { char: "自行车", pinyin: "zìxíngchē", meaning: "bicycle" },
+                    { char: "羊肉", pinyin: "yángròu", meaning: "mutton" },
+                    { char: "好吃", pinyin: "hǎochī", meaning: "delicious" },
+                    { char: "面条", pinyin: "miàntiáo", meaning: "noodles" },
+                    { char: "打篮球", pinyin: "dǎ lánqiú", meaning: "play basketball" },
+                    { char: "因为", pinyin: "yīnwèi", meaning: "because" },
+                    { char: "所以", pinyin: "suǒyǐ", meaning: "so" },
+                    { char: "游泳", pinyin: "yóuyǒng", meaning: "to swim" },
+                    { char: "经常", pinyin: "jīngcháng", meaning: "often" },
+                    { char: "公斤", pinyin: "gōngjīn", meaning: "kilogram" },
+                    { char: "姐姐", pinyin: "jiějie", meaning: "older sister" }
+                ],
+                7: [
+                    { char: "教室", pinyin: "jiàoshì", meaning: "classroom" },
+                    { char: "机场", pinyin: "jīchǎng", meaning: "airport" },
+                    { char: "路", pinyin: "lù", meaning: "road" },
+                    { char: "离", pinyin: "lí", meaning: "distant from" },
+                    { char: "公司", pinyin: "gōngsī", meaning: "company" },
+                    { char: "远", pinyin: "yuǎn", meaning: "far" },
+                    { char: "公共汽车", pinyin: "gōnggòngqìchē", meaning: "bus" },
+                    { char: "小时", pinyin: "xiǎoshí", meaning: "hour" },
+                    { char: "慢", pinyin: "màn", meaning: "slow" },
+                    { char: "快", pinyin: "kuài", meaning: "fast" },
+                    { char: "过", pinyin: "guò", meaning: "to pass (time)" },
+                    { char: "走", pinyin: "zǒu", meaning: "to walk" },
+                    { char: "到", pinyin: "dào", meaning: "to arrive" }
+                ],
+                8: [
+                    { char: "再", pinyin: "zài", meaning: "again" },
+                    { char: "让", pinyin: "ràng", meaning: "to let; to allow" },
+                    { char: "告诉", pinyin: "gàosu", meaning: "to tell" },
+                    { char: "等", pinyin: "děng", meaning: "to wait" },
+                    { char: "找", pinyin: "zhǎo", meaning: "to look for" },
+                    { char: "事情", pinyin: "shìqing", meaning: "matter; thing" },
+                    { char: "服务员", pinyin: "fúwùyuán", meaning: "waiter/waitress" },
+                    { char: "白", pinyin: "bái", meaning: "white" },
+                    { char: "黑", pinyin: "hēi", meaning: "black" },
+                    { char: "贵", pinyin: "guì", meaning: "expensive" }
+                ],
+                9: [
+                    { char: "错", pinyin: "cuò", meaning: "wrong" },
+                    { char: "从", pinyin: "cóng", meaning: "from" },
+                    { char: "跳舞", pinyin: "tiàowǔ", meaning: "to dance" },
+                    { char: "第一", pinyin: "dìyī", meaning: "first" },
+                    { char: "希望", pinyin: "xīwàng", meaning: "to hope" },
+                    { char: "问题", pinyin: "wèntí", meaning: "question; problem" },
+                    { char: "欢迎", pinyin: "huānyíng", meaning: "welcome" },
+                    { char: "上班", pinyin: "shàngbān", meaning: "to go to work" },
+                    { char: "懂", pinyin: "dǒng", meaning: "to understand" },
+                    { char: "完", pinyin: "wán", meaning: "to finish" },
+                    { char: "题", pinyin: "tí", meaning: "question (test/exam)" }
+                ],
+                10: [
+                    { char: "课", pinyin: "kè", meaning: "class; lesson" },
+                    { char: "帮助", pinyin: "bāngzhù", meaning: "to help" },
+                    { char: "别", pinyin: "bié", meaning: "don't" },
+                    { char: "哥哥", pinyin: "gēge", meaning: "older brother" },
+                    { char: "鸡蛋", pinyin: "jīdàn", meaning: "egg" },
+                    { char: "西瓜", pinyin: "xīguā", meaning: "watermelon" },
+                    { char: "正在", pinyin: "zhèngzài", meaning: "in the process of" },
+                    { char: "手机", pinyin: "shǒujī", meaning: "mobile phone" },
+                    { char: "洗", pinyin: "xǐ", meaning: "to wash" }
+                ],
+                11: [
+                    { char: "唱歌", pinyin: "chànggē", meaning: "to sing" },
+                    { char: "男", pinyin: "nán", meaning: "male" },
+                    { char: "女", pinyin: "nǚ", meaning: "female" },
+                    { char: "孩子", pinyin: "háizi", meaning: "child" },
+                    { char: "右边", pinyin: "yòubiān", meaning: "right side" },
+                    { char: "比", pinyin: "bǐ", meaning: "than (comparison)" },
+                    { char: "便宜", pinyin: "piányi", meaning: "cheap" },
+                    { char: "说话", pinyin: "shuōhuà", meaning: "to speak" },
+                    { char: "可能", pinyin: "kěnéng", meaning: "maybe; possible" },
+                    { char: "去年", pinyin: "qùnián", meaning: "last year" },
+                    { char: "姓", pinyin: "xìng", meaning: "surname" }
+                ],
+                12: [
+                    { char: "得", pinyin: "de", meaning: "particle (complement of degree)" },
+                    { char: "妻子", pinyin: "qīzi", meaning: "wife" },
+                    { char: "雪", pinyin: "xuě", meaning: "snow" },
+                    { char: "零", pinyin: "líng", meaning: "zero" },
+                    { char: "度", pinyin: "dù", meaning: "degree" },
+                    { char: "穿", pinyin: "chuān", meaning: "to wear" },
+                    { char: "进", pinyin: "jìn", meaning: "to enter" },
+                    { char: "弟弟", pinyin: "dìdi", meaning: "younger brother" },
+                    { char: "近", pinyin: "jìn", meaning: "close; near" }
+                ],
+                13: [
+                    { char: "着", pinyin: "zhe", meaning: "particle (indicating continuing state)" },
+                    { char: "手", pinyin: "shǒu", meaning: "hand" },
+                    { char: "拿", pinyin: "ná", meaning: "to hold; to take" },
+                    { char: "铅笔", pinyin: "qiānbǐ", meaning: "pencil" },
+                    { char: "班", pinyin: "bān", meaning: "class; team" },
+                    { char: "长", pinyin: "zhǎng", meaning: "to grow; to develop" },
+                    { char: "笑", pinyin: "xiào", meaning: "to smile; to laugh" },
+                    { char: "宾馆", pinyin: "bīnguǎn", meaning: "hotel" },
+                    { char: "一直", pinyin: "yìzhí", meaning: "straight; continuously" },
+                    { char: "往", pinyin: "wǎng", meaning: "towards" },
+                    { char: "路口", pinyin: "lùkǒu", meaning: "intersection" }
+                ],
+                14: [
+                    { char: "次", pinyin: "cì", meaning: "measure word for frequency" },
+                    { char: "看过", pinyin: "kànguo", meaning: "have seen (indicating experience)" },
+                    { char: "虽然", pinyin: "suīrán", meaning: "although" },
+                    { char: "但是", pinyin: "dànshì", meaning: "but" },
+                    { char: "晴", pinyin: "qíng", meaning: "sunny" },
+                    { char: "百", pinyin: "bǎi", meaning: "hundred" },
+                    { char: "有意思", pinyin: "yǒu yìsi", meaning: "interesting" },
+                    { char: "玩儿", pinyin: "wánr", meaning: "to play; have fun" }
+                ],
+                15: [
+                    { char: "日", pinyin: "rì", meaning: "day; date" },
+                    { char: "新年", pinyin: "xīnnián", meaning: "New Year" },
+                    { char: "票", pinyin: "piào", meaning: "ticket" },
+                    { char: "火车站", pinyin: "huǒchēzhàn", meaning: "train station" },
+                    { char: "大家", pinyin: "dàjiā", meaning: "everyone" },
+                    { char: "更", pinyin: "gèng", meaning: "more" },
+                    { char: "妹妹", pinyin: "mèimei", meaning: "younger sister" },
+                    { char: "阴", pinyin: "yīn", meaning: "overcast" }
+                ]
+            },
+            HSK3: {
+                1: [
+                    { char: "周末", pinyin: "zhōumò", meaning: "weekend" },
+                    { char: "打算", pinyin: "dǎsuàn", meaning: "plan; to intend" },
+                    { char: "啊", pinyin: "a", meaning: "ah (particle)" },
+                    { char: "跟", pinyin: "gēn", meaning: "with" },
+                    { char: "一直", pinyin: "yìzhí", meaning: "always; all the time" },
+                    { char: "游戏", pinyin: "yóuxì", meaning: "game" },
+                    { char: "作业", pinyin: "zuòyè", meaning: "homework" },
+                    { char: "着急", pinyin: "zháojí", meaning: "worried; anxious" },
+                    { char: "复习", pinyin: "fùxí", meaning: "to review" },
+                    { char: "南方", pinyin: "nánfāng", meaning: "south" },
+                    { char: "北方", pinyin: "běifāng", meaning: "north" },
+                    { char: "面包", pinyin: "miànbāo", meaning: "bread" },
+                    { char: "带", pinyin: "dài", meaning: "to bring; to take" },
+                    { char: "地图", pinyin: "dìtú", meaning: "map" },
+                    { char: "搬", pinyin: "bān", meaning: "to move (objects/house)" }
+                ],
+                2: [
+                    { char: "腿", pinyin: "tuǐ", meaning: "leg" },
+                    { char: "疼", pinyin: "téng", meaning: "pain; hurt" },
+                    { char: "脚", pinyin: "jiǎo", meaning: "foot" },
+                    { char: "树", pinyin: "shù", meaning: "tree" },
+                    { char: "容易", pinyin: "róngyì", meaning: "easy" },
+                    { char: "难", pinyin: "nán", meaning: "difficult" },
+                    { char: "太太", pinyin: "tàitai", meaning: "Mrs.; wife" },
+                    { char: "秘书", pinyin: "mìshū", meaning: "secretary" },
+                    { char: "经理", pinyin: "jīnglǐ", meaning: "manager" },
+                    { char: "办公室", pinyin: "bàngōngshì", meaning: "office" },
+                    { char: "辆", pinyin: "liàng", meaning: "measure word for vehicles" },
+                    { char: "楼", pinyin: "lóu", meaning: "building; floor" },
+                    { char: "拿", pinyin: "ná", meaning: "to take; to hold" },
+                    { char: "把", pinyin: "bǎ", meaning: "measure word for bunches/things with handles" },
+                    { char: "伞", pinyin: "sǎn", meaning: "umbrella" },
+                    { char: "胖", pinyin: "pàng", meaning: "fat" },
+                    { char: "其实", pinyin: "qíshí", meaning: "actually" },
+                    { char: "瘦", pinyin: "shòu", meaning: "thin" }
+                ],
+                3: [
+                    { char: "还是", pinyin: "háishì", meaning: "or (in questions)" },
+                    { char: "爬山", pinyin: "páshān", meaning: "to climb a mountain" },
+                    { char: "小心", pinyin: "xiǎoxīn", meaning: "careful" },
+                    { char: "条", pinyin: "tiáo", meaning: "measure word for pants/dresses" },
+                    { char: "裤子", pinyin: "kùzi", meaning: "pants" },
+                    { char: "记得", pinyin: "jìde", meaning: "to remember" },
+                    { char: "衬衫", pinyin: "chènshān", meaning: "shirt" },
+                    { char: "元", pinyin: "yuán", meaning: "yuan (currency unit)" },
+                    { char: "新鲜", pinyin: "xīnxiān", meaning: "fresh" },
+                    { char: "甜", pinyin: "tián", meaning: "sweet" },
+                    { char: "只", pinyin: "zhǐ", meaning: "only" },
+                    { char: "放", pinyin: "fàng", meaning: "to put; to place" },
+                    { char: "饮料", pinyin: "yǐnliào", meaning: "beverage" },
+                    { char: "或者", pinyin: "huòzhě", meaning: "or (in statements)" },
+                    { char: "舒服", pinyin: "shūfu", meaning: "comfortable" },
+                    { char: "花", pinyin: "huā", meaning: "flower" },
+                    { char: "绿", pinyin: "lǜ", meaning: "green" }
+                ]
+            }
+        };
 
-const hsk2Data = [
-    { hanzi: "吧", pinyin: "ba", en: "particle" }, { hanzi: "白", pinyin: "bái", en: "white" },
-    { hanzi: "百", pinyin: "bǎi", en: "hundred" }, { hanzi: "帮助", pinyin: "bāngzhù", en: "help" },
-    { hanzi: "报纸", pinyin: "bàozhǐ", en: "newspaper" }, { hanzi: "比", pinyin: "bǐ", en: "compare" },
-    { hanzi: "别", pinyin: "bié", en: "don't" }, { hanzi: "长", pinyin: "cháng", en: "long" },
-    { hanzi: "唱歌", pinyin: "chànggē", en: "sing" }, { hanzi: "出", pinyin: "chū", en: "out" },
-    { hanzi: "穿", pinyin: "chuān", en: "wear" }, { hanzi: "次", pinyin: "cì", en: "time (freq)" },
-    { hanzi: "从", pinyin: "cóng", en: "from" }, { hanzi: "错", pinyin: "cuò", en: "wrong" },
-    { hanzi: "打篮球", pinyin: "dǎ lánqiú", en: "play basketball" }, { hanzi: "大家", pinyin: "dàjiā", en: "everyone" },
-    { hanzi: "到", pinyin: "dào", en: "arrive" }, { hanzi: "得", pinyin: "de", en: "particle" },
-    { hanzi: "等", pinyin: "děng", en: "wait" }, { hanzi: "弟弟", pinyin: "dìdi", en: "younger brother" },
-    { hanzi: "第一", pinyin: "dìyī", en: "first" }, { hanzi: "懂", pinyin: "dǒng", en: "understand" },
-    { hanzi: "对", pinyin: "duì", en: "right / correct" }, { hanzi: "对", pinyin: "duì", en: "towards" },
-    { hanzi: "房间", pinyin: "fángjiān", en: "room" }, { hanzi: "非常", pinyin: "fēicháng", en: "very" },
-    { hanzi: "服务员", pinyin: "fúwùyuán", en: "waiter" }, { hanzi: "高", pinyin: "gāo", en: "tall/high" },
-    { hanzi: "告诉", pinyin: "gàosu", en: "tell" }, { hanzi: "哥哥", pinyin: "gēge", en: "older brother" },
-    { hanzi: "给", pinyin: "gěi", en: "give" }, { hanzi: "公共汽车", pinyin: "gōnggòng qìchē", en: "bus" },
-    { hanzi: "公司", pinyin: "gōngsī", en: "company" }, { hanzi: "贵", pinyin: "guì", en: "expensive" },
-    { hanzi: "过", pinyin: "guo", en: "particle" }, { hanzi: "还", pinyin: "hái", en: "still" },
-    { hanzi: "孩子", pinyin: "háizi", en: "child" }, { hanzi: "好吃", pinyin: "hǎochī", en: "delicious" },
-    { hanzi: "黑", pinyin: "hēi", en: "black" }, { hanzi: "红", pinyin: "hóng", en: "red" },
-    { hanzi: "欢迎", pinyin: "huānyíng", en: "welcome" }, { hanzi: "回答", pinyin: "huídá", en: "answer" },
-    { hanzi: "火车站", pinyin: "huǒchēzhàn", en: "train station" }, { hanzi: "机场", pinyin: "jīchǎng", en: "airport" },
-    { hanzi: "鸡蛋", pinyin: "jīdàn", en: "egg" }, { hanzi: "件", pinyin: "jiàn", en: "piece (mw)" },
-    { hanzi: "教室", pinyin: "jiàoshì", en: "classroom" }, { hanzi: "姐姐", pinyin: "jiějie", en: "older sister" },
-    { hanzi: "介绍", pinyin: "jièshào", en: "introduce" }, { hanzi: "进", pinyin: "jìn", en: "enter" },
-    { hanzi: "近", pinyin: "jìn", en: "near" }, { hanzi: "就", pinyin: "jiù", en: "then/just" },
-    { hanzi: "觉得", pinyin: "juéde", en: "feel/think" }, { hanzi: "咖啡", pinyin: "kāfēi", en: "coffee" },
-    { hanzi: "开始", pinyin: "kāishǐ", en: "begin" }, { hanzi: "考试", pinyin: "kǎoshì", en: "exam" },
-    { hanzi: "可能", pinyin: "kěnéng", en: "possible" }, { hanzi: "可以", pinyin: "kěyǐ", en: "can" },
-    { hanzi: "课", pinyin: "kè", en: "class" }, { hanzi: "快", pinyin: "kuài", en: "fast" },
-    { hanzi: "快乐", pinyin: "kuàilè", en: "happy" }, { hanzi: "累", pinyin: "lèi", en: "tired" },
-    { hanzi: "离", pinyin: "lí", en: "away from" }, { hanzi: "两", pinyin: "liǎng", en: "two" },
-    { hanzi: "零", pinyin: "líng", en: "zero" }, { hanzi: "路", pinyin: "lù", en: "road" },
-    { hanzi: "旅游", pinyin: "lǚyóu", en: "travel" }, { hanzi: "卖", pinyin: "mài", en: "sell" },
-    { hanzi: "慢", pinyin: "màn", en: "slow" }, { hanzi: "忙", pinyin: "máng", en: "busy" },
-    { hanzi: "每", pinyin: "měi", en: "every" }, { hanzi: "妹妹", pinyin: "mèimei", en: "younger sister" },
-    { hanzi: "门", pinyin: "mén", en: "door" }, { hanzi: "面条", pinyin: "miàntiáo", en: "noodles" },
-    { hanzi: "男", pinyin: "nán", en: "male" }, { hanzi: "您", pinyin: "nín", en: "you (polite)" },
-    { hanzi: "牛奶", pinyin: "niúnǎi", en: "milk" }, { hanzi: "女", pinyin: "nǚ", en: "female" },
-    { hanzi: "旁边", pinyin: "pángbiān", en: "side" }, { hanzi: "跑步", pinyin: "pǎobù", en: "run" },
-    { hanzi: "便宜", pinyin: "piányi", en: "cheap" }, { hanzi: "票", pinyin: "piào", en: "ticket" },
-    { hanzi: "妻子", pinyin: "qīzi", en: "wife" }, { hanzi: "起床", pinyin: "qǐchuáng", en: "get up" },
-    { hanzi: "千", pinyin: "qiān", en: "thousand" }, { hanzi: "铅笔", pinyin: "qiānbǐ", en: "pencil" },
-    { hanzi: "晴", pinyin: "qíng", en: "sunny" }, { hanzi: "去年", pinyin: "qùnián", en: "last year" },
-    { hanzi: "让", pinyin: "ràng", en: "let" }, { hanzi: "日", pinyin: "rì", en: "day" },
-    { hanzi: "上班", pinyin: "shàngbān", en: "go to work" }, { hanzi: "身体", pinyin: "shēntǐ", en: "body" },
-    { hanzi: "生病", pinyin: "shēngbìng", en: "sick" }, { hanzi: "生日", pinyin: "shēngrì", en: "birthday" },
-    { hanzi: "时间", pinyin: "shíjiān", en: "time" }, { hanzi: "事情", pinyin: "shìqing", en: "thing/matter" },
-    { hanzi: "手表", pinyin: "shǒubiǎo", en: "watch" }, { hanzi: "手机", pinyin: "shǒujī", en: "phone" },
-    { hanzi: "说话", pinyin: "shuōhuà", en: "speak" }, { hanzi: "送", pinyin: "sòng", en: "give/send" },
-    { hanzi: "虽然", pinyin: "suīrán", en: "although" }, { hanzi: "但是", pinyin: "dànshì", en: "but" },
-    { hanzi: "它", pinyin: "tā", en: "it" }, { hanzi: "踢足球", pinyin: "tī zúqiú", en: "play soccer" },
-    { hanzi: "题", pinyin: "tí", en: "topic" }, { hanzi: "跳舞", pinyin: "tiàowǔ", en: "dance" },
-    { hanzi: "外", pinyin: "wài", en: "outside" }, { hanzi: "完", pinyin: "wán", en: "finish" },
-    { hanzi: "玩", pinyin: "wán", en: "play" }, { hanzi: "晚上", pinyin: "wǎnshang", en: "evening" },
-    { hanzi: "往", pinyin: "wǎng", en: "towards" }, { hanzi: "为什么", pinyin: "wèishénme", en: "why" },
-    { hanzi: "问", pinyin: "wèn", en: "ask" }, { hanzi: "问题", pinyin: "wèntí", en: "question" },
-    { hanzi: "西瓜", pinyin: "xīguā", en: "watermelon" }, { hanzi: "希望", pinyin: "xīwàng", en: "hope" },
-    { hanzi: "洗", pinyin: "xǐ", en: "wash" }, { hanzi: "小时", pinyin: "xiǎoshí", en: "hour" },
-    { hanzi: "笑", pinyin: "xiào", en: "laugh" }, { hanzi: "新", pinyin: "xīn", en: "new" },
-    { hanzi: "姓", pinyin: "xìng", en: "surname" }, { hanzi: "休息", pinyin: "xiūxi", en: "rest" },
-    { hanzi: "雪", pinyin: "xuě", en: "snow" }, { hanzi: "颜色", pinyin: "yánsè", en: "color" },
-    { hanzi: "眼睛", pinyin: "yǎnjing", en: "eye" }, { hanzi: "羊肉", pinyin: "yángròu", en: "mutton" },
-    { hanzi: "药", pinyin: "yào", en: "medicine" }, { hanzi: "要", pinyin: "yào", en: "want" },
-    { hanzi: "也", pinyin: "yě", en: "also" }, { hanzi: "一下", pinyin: "yíxià", en: "a bit" },
-    { hanzi: "一起", pinyin: "yìqǐ", en: "together" }, { hanzi: "已经", pinyin: "yǐjīng", en: "already" },
-    { hanzi: "意思", pinyin: "yìsi", en: "meaning" }, { hanzi: "因为", pinyin: "yīnwèi", en: "because" },
-    { hanzi: "所以", pinyin: "suǒyǐ", en: "so" }, { hanzi: "阴", pinyin: "yīn", en: "cloudy" },
-    { hanzi: "游泳", pinyin: "yóuyǒng", en: "swim" }, { hanzi: "右边", pinyin: "yòubian", en: "right side" },
-    { hanzi: "鱼", pinyin: "yú", en: "fish" }, { hanzi: "远", pinyin: "yuǎn", en: "far" },
-    { hanzi: "运动", pinyin: "yùndòng", en: "sport" }, { hanzi: "再", pinyin: "zài", en: "again" },
-    { hanzi: "早上", pinyin: "zǎoshang", en: "morning" }, { hanzi: "丈夫", pinyin: "zhàngfu", en: "husband" },
-    { hanzi: "找", pinyin: "zhǎo", en: "find" }, { hanzi: "着", pinyin: "zhe", en: "particle" },
-    { hanzi: "真", pinyin: "zhēn", en: "real" }, { hanzi: "正在", pinyin: "zhèngzài", en: "in process of" },
-    { hanzi: "知道", pinyin: "zhīdao", en: "know" }, { hanzi: "准备", pinyin: "zhǔnbèi", en: "prepare" },
-    { hanzi: "自行车", pinyin: "zìxíngchē", en: "bike" }, { hanzi: "走", pinyin: "zǒu", en: "walk" },
-    { hanzi: "最", pinyin: "zuì", en: "most" }, { hanzi: "左边", pinyin: "zuǒbian", en: "left side" }
-];
+        // Question limits for "all" mode
+        const allModeLimits = {
+            HSK1: 150,
+            HSK2: 150,
+            HSK3: 50,
+            Combined: 350
+        };
 
-/* --- APP STATE --- */
-let state = {
-    level: 'hsk1',
-    mode: 'pinyin-to-char',
-    qCount: 20,
-    questions: [],
-    currentIndex: 0,
-    score: 0,
-    mistakes: [],
-    timerSeconds: 0,
-    timerInterval: null
-};
+        // State
+        let currentLevel = '';
+        let currentChapter = '';
+        let currentMode = '';
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+        let currentWord = null;
 
-/* --- INIT & STORAGE --- */
-window.onload = function() {
-    // Load saved settings
-    const savedLevel = localStorage.getItem('hsk_level');
-    const savedMode = localStorage.getItem('hsk_mode');
-    
-    if(savedLevel) {
-        state.level = savedLevel;
-        updateSelectionStyles(document.querySelector(`button[onclick="selectLevel('${savedLevel}', this)"]`));
-    }
-    if(savedMode) {
-        state.mode = savedMode;
-        updateSelectionStyles(document.querySelector(`button[onclick="selectMode('${savedMode}', this)"]`));
-    }
-    
-    updateHighScoreDisplay();
-    updateSliderVal(20);
-
-    // Keyboard Listener
-    document.addEventListener('keydown', handleKeydown);
-};
-
-function handleKeydown(e) {
-    if (!document.getElementById('screen-quiz').classList.contains('active')) return;
-    
-    const key = e.key;
-    if (['1', '2', '3', '4'].includes(key)) {
-        const index = parseInt(key) - 1;
-        const options = document.querySelectorAll('.option-card');
-        if (options[index] && !options[index].classList.contains('disabled')) {
-            options[index].click();
+        // Get chapter count for each level
+        function getChapterCount(level) {
+            if (level === 'Combined') return 33;
+            if (level === 'HSK3') return 3;
+            return 15;
         }
-    }
-}
 
-/* --- UI LOGIC --- */
-
-function selectLevel(level, btn) {
-    state.level = level;
-    localStorage.setItem('hsk_level', level);
-    updateSelectionStyles(btn);
-    updateHighScoreDisplay();
-    
-    const slider = document.getElementById('q-slider');
-    const max = level === 'combined' ? 300 : 150;
-    slider.max = max;
-    if(parseInt(slider.value) > max) {
-        slider.value = max;
-        updateSliderVal(max);
-    }
-}
-
-function selectMode(mode, btn) {
-    state.mode = mode;
-    localStorage.setItem('hsk_mode', mode);
-    updateSelectionStyles(btn);
-}
-
-function updateSelectionStyles(clickedBtn) {
-    if(!clickedBtn) return;
-    const siblings = clickedBtn.parentNode.children;
-    for(let btn of siblings) btn.classList.remove('selected');
-    clickedBtn.classList.add('selected');
-}
-
-function updateSliderVal(val) {
-    state.qCount = val;
-    document.getElementById('q-display').textContent = val;
-}
-
-function updateHighScoreDisplay() {
-    const score = localStorage.getItem(`hsk_best_${state.level}`) || 0;
-    document.getElementById('high-score-display').innerHTML = `<span>🏆 Personal Best for ${state.level.toUpperCase()}: ${score}%</span>`;
-}
-
-function goToSetup() {
-    clearInterval(state.timerInterval);
-    showScreen('screen-setup');
-    updateHighScoreDisplay();
-}
-
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-}
-
-/* --- AUDIO LOGIC --- */
-function speakText(text) {
-    if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'zh-CN';
-        utterance.rate = 0.8; // Slightly slower for learners
-        window.speechSynthesis.speak(utterance);
-    }
-}
-
-function speakCurrentQuestion() {
-    const q = state.questions[state.currentIndex];
-    if (q) speakText(q.hanzi);
-}
-
-/* --- QUIZ ENGINE --- */
-
-function initQuiz() {
-    let pool = [];
-    if(state.level === 'hsk1') pool = [...hsk1Data];
-    else if(state.level === 'hsk2') pool = [...hsk2Data];
-    else pool = [...hsk1Data, ...hsk2Data];
-
-    pool.sort(() => 0.5 - Math.random());
-    state.questions = pool.slice(0, state.qCount);
-    state.currentIndex = 0;
-    state.score = 0;
-    state.mistakes = [];
-    state.timerSeconds = 0;
-
-    document.getElementById('live-score').textContent = 0;
-    document.getElementById('progress-fill').style.width = '0%';
-    
-    if(state.timerInterval) clearInterval(state.timerInterval);
-    state.timerInterval = setInterval(() => {
-        state.timerSeconds++;
-        const m = Math.floor(state.timerSeconds / 60).toString().padStart(2,'0');
-        const s = (state.timerSeconds % 60).toString().padStart(2,'0');
-        document.getElementById('timer').textContent = `${m}:${s}`;
-    }, 1000);
-
-    showScreen('screen-quiz');
-    loadQuestion();
-}
-
-function loadQuestion() {
-    if (state.currentIndex >= state.questions.length) {
-        endQuiz();
-        return;
-    }
-
-    const q = state.questions[state.currentIndex];
-    const isCharToPinyin = state.mode === 'char-to-pinyin';
-
-    const mainEl = document.getElementById('q-main');
-    const subEl = document.getElementById('q-sub');
-    
-    if (isCharToPinyin) {
-        mainEl.textContent = q.hanzi;
-        subEl.textContent = ""; 
-    } else {
-        mainEl.textContent = q.pinyin;
-        subEl.textContent = ""; 
-    }
-
-    let distractors = [];
-    let fullPool = state.level === 'hsk1' ? hsk1Data : (state.level === 'hsk2' ? hsk2Data : [...hsk1Data, ...hsk2Data]);
-    
-    while(distractors.length < 3) {
-        const r = fullPool[Math.floor(Math.random() * fullPool.length)];
-        if (r.hanzi !== q.hanzi && !distractors.includes(r)) {
-            distractors.push(r);
+        // Get all vocabulary for a level
+        function getAllVocab(level) {
+            if (level === 'Combined') {
+                return [...Object.values(vocabulary.HSK1).flat(),
+                        ...Object.values(vocabulary.HSK2).flat(),
+                        ...Object.values(vocabulary.HSK3).flat()];
+            }
+            return Object.values(vocabulary[level]).flat();
         }
-    }
 
-    let options = [q, ...distractors];
-    options.sort(() => 0.5 - Math.random());
+        // Get vocabulary for a specific chapter
+        function getChapterVocab(level, chapter) {
+            if (chapter === 'all') {
+                return getAllVocab(level);
+            }
+            if (level === 'Combined') {
+                // For combined, chapter numbers map across all levels
+                if (chapter <= 15) {
+                    return vocabulary.HSK1[chapter] || [];
+                } else if (chapter <= 30) {
+                    return vocabulary.HSK2[chapter - 15] || [];
+                } else {
+                    return vocabulary.HSK3[chapter - 30] || [];
+                }
+            }
+            return vocabulary[level][chapter] || [];
+        }
 
-    const container = document.getElementById('options-area');
-    container.innerHTML = '';
+        // Show/Hide screens
+        function hideAllScreens() {
+            document.querySelectorAll('#app > div').forEach(el => el.classList.add('hidden'));
+        }
 
-    options.forEach((opt, index) => {
-        const btn = document.createElement('div');
-        btn.className = 'option-card';
-        
-        let mainText = isCharToPinyin ? opt.pinyin : opt.hanzi;
-        if (isCharToPinyin) mainText += ` (${opt.en})`;
-        let subText = opt.en;
+        function showHome() {
+            hideAllScreens();
+            document.getElementById('home-screen').classList.remove('hidden');
+        }
 
-        btn.innerHTML = `
-            <div class="key-badge">${index + 1}</div>
-            <div class="opt-main ${isCharToPinyin ? '' : 'chinese-text'}">${mainText}</div>
-            <div class="opt-sub">${subText}</div>
-        `;
-        
-        btn.onclick = () => handleAnswer(opt, q, btn);
-        container.appendChild(btn);
-    });
+        function selectLevel(level) {
+            currentLevel = level;
+            
+            // For Combined, skip chapter selection and go directly to mode selection
+            if (level === 'Combined') {
+                currentChapter = 'all';
+                hideAllScreens();
+                document.getElementById('mode-screen').classList.remove('hidden');
+                document.getElementById('mode-subtitle').textContent = 'Combined - All HSK Levels';
+                // Update back button to go to home instead of chapters
+                document.getElementById('mode-back-btn').onclick = showHome;
+                document.getElementById('mode-back-text').textContent = 'Back to Levels';
+                return;
+            }
+            
+            hideAllScreens();
+            document.getElementById('chapter-screen').classList.remove('hidden');
+            document.getElementById('level-title').textContent = `${level} - Select Chapter`;
+            renderChapters(level);
+        }
 
-    const pct = ((state.currentIndex) / state.qCount) * 100;
-    document.getElementById('progress-fill').style.width = `${pct}%`;
-}
-
-function handleAnswer(selected, correct, btnElement) {
-    const allOpts = document.querySelectorAll('.option-card');
-    allOpts.forEach(o => o.classList.add('disabled'));
-
-    const isCorrect = selected.hanzi === correct.hanzi;
-
-    // Auto play sound of the CORRECT word
-    speakText(correct.hanzi);
-
-    if (isCorrect) {
-        state.score++;
-        document.getElementById('live-score').textContent = state.score;
-        btnElement.classList.add('correct');
-    } else {
-        btnElement.classList.add('wrong');
-        allOpts.forEach(o => {
-            if(o.innerHTML.includes(correct.en)) o.classList.add('correct'); 
-        });
-        state.mistakes.push({ q: correct, wrong: selected });
-    }
-
-    setTimeout(() => {
-        state.currentIndex++;
-        loadQuestion();
-    }, 1500); // Slightly longer delay to allow audio to finish
-}
-
-function endQuiz() {
-    clearInterval(state.timerInterval);
-    showScreen('screen-result');
-
-    const pct = Math.round((state.score / state.qCount) * 100);
-    document.getElementById('final-score').textContent = pct + '%';
-    document.getElementById('final-text').textContent = `You got ${state.score} out of ${state.qCount}`;
-
-    // Save High Score
-    const key = `hsk_best_${state.level}`;
-    const currentBest = localStorage.getItem(key) || 0;
-    if (pct > currentBest) {
-        localStorage.setItem(key, pct);
-    }
-
-    // Confetti if good score
-    if (pct >= 70) {
-        fireConfetti();
-    }
-
-    const mistContainer = document.getElementById('mistakes-container');
-    const mistList = document.getElementById('mistakes-list');
-    
-    if (state.mistakes.length > 0) {
-        mistContainer.style.display = 'block';
-        mistList.innerHTML = '';
-        state.mistakes.forEach(m => {
-            const item = document.createElement('div');
-            item.className = 'mistake-item';
-            item.innerHTML = `
-                <div class="mistake-info">
-                    <h4>${m.q.hanzi} (${m.q.pinyin})</h4>
-                    <p>Meaning: ${m.q.en}</p>
-                </div>
-                <div style="color:var(--wrong); font-size:0.9rem;">
-                    You picked: ${state.mode === 'char-to-pinyin' ? m.wrong.pinyin : m.wrong.hanzi}
+        function renderChapters(level) {
+            const grid = document.getElementById('chapter-grid');
+            let html = '';
+            
+            // Render chapters for the selected level (Combined is handled in selectLevel)
+            const chapters = getChapterCount(level);
+            for (let i = 1; i <= chapters; i++) {
+                const wordCount = vocabulary[level][i]?.length || 0;
+                html += createChapterCard(i, `Chapter ${i}`, wordCount);
+            }
+            
+            const totalWords = getAllVocab(level).length;
+            const questionLimit = allModeLimits[level];
+            html += `
+                <div onclick="selectChapter('all')" class="card-hover cursor-pointer bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 shadow-lg text-center text-white col-span-2 sm:col-span-1">
+                    <div class="text-2xl font-bold mb-1">📚</div>
+                    <p class="text-sm font-medium">All Chapters</p>
+                    <p class="text-xs text-white/70">${totalWords} words • ${questionLimit} questions</p>
                 </div>
             `;
-            mistList.appendChild(item);
-        });
-    } else {
-        mistContainer.style.display = 'none';
-    }
-}
+            
+            grid.innerHTML = html;
+        }
 
-/* --- CONFETTI EFFECT (Simple implementation) --- */
-function fireConfetti() {
-    const canvas = document.getElementById('confetti-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    let particles = [];
-    const colors = ['#e11d48', '#3b82f6', '#22c55e', '#fbbf24'];
-    
-    for(let i=0; i<100; i++) {
-        particles.push({
-            x: canvas.width/2, 
-            y: canvas.height/2,
-            vx: (Math.random() - 0.5) * 15,
-            vy: (Math.random() - 1.5) * 15,
-            size: Math.random() * 8 + 4,
-            color: colors[Math.floor(Math.random()*colors.length)],
-            life: 100
-        });
-    }
-    
-    function animate() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        let active = false;
-        particles.forEach(p => {
-            if(p.life > 0) {
-                active = true;
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.5; // Gravity
-                p.life--;
-                ctx.fillStyle = p.color;
-                ctx.fillRect(p.x, p.y, p.size, p.size);
+        function createChapterCard(chapterNum, displayText, wordCount, sublevel = '') {
+            return `
+                <div onclick="selectChapter(${chapterNum})" class="card-hover cursor-pointer bg-white rounded-xl p-4 shadow-lg text-center border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-xl font-bold text-indigo-600 mb-1">${displayText}</div>
+                    ${sublevel ? `<p class="text-xs text-gray-400">${sublevel}</p>` : ''}
+                    <p class="text-xs text-gray-500">${wordCount} words</p>
+                </div>
+            `;
+        }
+
+        function selectChapter(chapter) {
+            currentChapter = chapter;
+            hideAllScreens();
+            document.getElementById('mode-screen').classList.remove('hidden');
+            
+            // Reset back button for non-combined levels
+            document.getElementById('mode-back-btn').onclick = showChapters;
+            document.getElementById('mode-back-text').textContent = 'Back to Chapters';
+            
+            let chapterText;
+            if (chapter === 'all') {
+                chapterText = 'All Chapters';
+            } else {
+                chapterText = `Chapter ${chapter}`;
             }
-        });
-        if(active) requestAnimationFrame(animate);
-        else ctx.clearRect(0,0,canvas.width,canvas.height);
-    }
-    animate();
-}
+            document.getElementById('mode-subtitle').textContent = `${currentLevel} - ${chapterText}`;
+        }
 
-// Init slider label on load
-updateSliderVal(20);
+        function showChapters() {
+            hideAllScreens();
+            document.getElementById('chapter-screen').classList.remove('hidden');
+        }
 
-</script>
+        // Generate quiz questions
+        function generateQuestions(vocabList, mode) {
+            const shuffled = [...vocabList].sort(() => Math.random() - 0.5);
+            
+            // Determine question count based on context
+            let questionCount;
+            if (currentChapter === 'all') {
+                questionCount = Math.min(allModeLimits[currentLevel], shuffled.length);
+            } else {
+                questionCount = shuffled.length; // Use all words in the chapter
+            }
+            
+            const selected = shuffled.slice(0, questionCount);
+            
+            return selected.map(word => {
+                const options = generateOptions(word, vocabList, mode);
+                return { word, options, mode };
+            });
+        }
+
+        // Get the full word pool for generating options (uses entire level's vocabulary)
+        function getOptionsPool(level) {
+            if (level === 'Combined') {
+                return [...Object.values(vocabulary.HSK1).flat(),
+                        ...Object.values(vocabulary.HSK2).flat(),
+                        ...Object.values(vocabulary.HSK3).flat()];
+            }
+            // For combined chapter selections, determine the actual HSK level
+            if (currentChapter !== 'all' && level === 'Combined') {
+                if (currentChapter <= 15) {
+                    return Object.values(vocabulary.HSK1).flat();
+                } else if (currentChapter <= 30) {
+                    return Object.values(vocabulary.HSK2).flat();
+                } else {
+                    return Object.values(vocabulary.HSK3).flat();
+                }
+            }
+            return Object.values(vocabulary[level]).flat();
+        }
+
+        function generateOptions(correctWord, chapterWords, mode) {
+            const correctAnswer = mode === 'charToPinyin' ? correctWord.pinyin : correctWord.char;
+            
+            // Get a larger pool of words for options (entire level)
+            let optionsPool = getOptionsPool(currentLevel);
+            
+            // Filter out the correct word and get unique options
+            const otherWords = optionsPool.filter(w => {
+                const answer = mode === 'charToPinyin' ? w.pinyin : w.char;
+                return answer !== correctAnswer;
+            });
+            
+            // Shuffle and pick 3 wrong answers
+            const shuffledOthers = otherWords.sort(() => Math.random() - 0.5).slice(0, 3);
+            
+            const options = [
+                correctAnswer,
+                ...shuffledOthers.map(w => mode === 'charToPinyin' ? w.pinyin : w.char)
+            ];
+            
+            return options.sort(() => Math.random() - 0.5);
+        }
+
+        // Start quiz
+        function startQuiz(mode) {
+            currentMode = mode;
+            const vocab = getChapterVocab(currentLevel, currentChapter);
+            
+            // Check if there are any words
+            if (vocab.length === 0) {
+                alert('No words found in this chapter. Please select a different chapter.');
+                return;
+            }
+            
+            currentQuestions = generateQuestions(vocab, mode);
+            currentQuestionIndex = 0;
+            score = 0;
+            answered = false;
+            
+            hideAllScreens();
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('quiz-level-badge').textContent = currentLevel;
+            
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const question = currentQuestions[currentQuestionIndex];
+            currentWord = question.word;
+            answered = false;
+            
+            // Update progress
+            const progress = ((currentQuestionIndex) / currentQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            document.getElementById('question-counter').textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}`;
+            document.getElementById('score-display').textContent = `Score: ${score}`;
+            
+            // Display question
+            const questionText = document.getElementById('question-text');
+            if (currentMode === 'charToPinyin') {
+                questionText.textContent = question.word.char;
+                questionText.className = 'text-5xl font-bold chinese-text mb-4';
+            } else {
+                questionText.textContent = question.word.pinyin;
+                questionText.className = 'text-4xl font-bold mb-4';
+            }
+            
+            // Hide meaning
+            document.getElementById('meaning-display').classList.add('hidden');
+            document.getElementById('word-meaning').textContent = question.word.meaning;
+            
+            // Hide next button
+            document.getElementById('next-btn').classList.add('hidden');
+            
+            // Render options
+            const container = document.getElementById('options-container');
+            container.innerHTML = question.options.map((option, index) => `
+                <button onclick="selectAnswer('${option.replace(/'/g, "\\'")}')" 
+                    class="option-btn bg-white border-2 border-gray-200 rounded-xl p-4 text-lg font-medium hover:border-indigo-500 hover:bg-indigo-50 transition ${currentMode === 'pinyinToChar' ? 'chinese-text text-2xl' : ''}">
+                    ${option}
+                </button>
+            `).join('');
+        }
+
+        function selectAnswer(selected) {
+            if (answered) return;
+            answered = true;
+            
+            const question = currentQuestions[currentQuestionIndex];
+            const correct = currentMode === 'charToPinyin' ? question.word.pinyin : question.word.char;
+            const isCorrect = selected === correct;
+            
+            if (isCorrect) {
+                score++;
+                document.getElementById('score-display').textContent = `Score: ${score}`;
+            }
+            
+            // Highlight answers
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                const btnText = btn.textContent.trim();
+                if (btnText === correct) {
+                    btn.classList.remove('border-gray-200', 'hover:border-indigo-500', 'hover:bg-indigo-50');
+                    btn.classList.add('border-green-500', 'bg-green-100', 'text-green-800', 'correct-answer');
+                } else if (btnText === selected && !isCorrect) {
+                    btn.classList.remove('border-gray-200', 'hover:border-indigo-500', 'hover:bg-indigo-50');
+                    btn.classList.add('border-red-500', 'bg-red-100', 'text-red-800', 'shake');
+                }
+                btn.disabled = true;
+            });
+            
+            // Show meaning
+            document.getElementById('meaning-display').classList.remove('hidden');
+            
+            // Pronounce the word after answer is selected
+            pronounceWord();
+            
+            // Show next button
+            document.getElementById('next-btn').classList.remove('hidden');
+            
+            // Update next button text
+            if (currentQuestionIndex === currentQuestions.length - 1) {
+                document.getElementById('next-btn').textContent = 'See Results →';
+            } else {
+                document.getElementById('next-btn').textContent = 'Next Question →';
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex >= currentQuestions.length) {
+                showResults();
+            } else {
+                showQuestion();
+            }
+        }
+
+        function showResults() {
+            hideAllScreens();
+            document.getElementById('results-screen').classList.remove('hidden');
+            
+            const percentage = Math.round((score / currentQuestions.length) * 100);
+            document.getElementById('final-score').textContent = `${percentage}%`;
+            document.getElementById('score-text').textContent = `You got ${score} out of ${currentQuestions.length} correct!`;
+            
+            // Set emoji based on score
+            let emoji = '🎉';
+            if (percentage < 50) emoji = '😢';
+            else if (percentage < 70) emoji = '😊';
+            else if (percentage < 90) emoji = '🎊';
+            document.getElementById('results-emoji').textContent = emoji;
+            
+            // Save and check best score
+            const scoreKey = `${currentLevel}_${currentChapter}_${currentMode}`;
+            const bestScores = JSON.parse(localStorage.getItem('hskBestScores') || '{}');
+            const previousBest = bestScores[scoreKey] || 0;
+            
+            if (percentage > previousBest) {
+                bestScores[scoreKey] = percentage;
+                localStorage.setItem('hskBestScores', JSON.stringify(bestScores));
+                document.getElementById('new-best').classList.remove('hidden');
+            } else {
+                document.getElementById('new-best').classList.add('hidden');
+            }
+            
+            document.getElementById('best-score-display').textContent = 
+                `Best score for this section: ${Math.max(percentage, previousBest)}%`;
+        }
+
+        function restartQuiz() {
+            startQuiz(currentMode);
+        }
+
+        // Pronunciation - only called when user clicks answer or speaker button
+        function pronounceWord() {
+            if (!currentWord) return;
+            
+            const utterance = new SpeechSynthesisUtterance(currentWord.char);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.8;
+            speechSynthesis.speak(utterance);
+        }
+
+        // Quit quiz confirmation
+        function confirmQuit() {
+            document.getElementById('quit-modal').classList.remove('hidden');
+        }
+
+        function closeQuitModal() {
+            document.getElementById('quit-modal').classList.add('hidden');
+        }
+
+        function quitQuiz() {
+            closeQuitModal();
+            showChapters();
+        }
+
+        // Scores screen
+        function showScores() {
+            hideAllScreens();
+            document.getElementById('scores-screen').classList.remove('hidden');
+            
+            const bestScores = JSON.parse(localStorage.getItem('hskBestScores') || '{}');
+            const container = document.getElementById('scores-container');
+            const noScores = document.getElementById('no-scores');
+            
+            if (Object.keys(bestScores).length === 0) {
+                container.innerHTML = '';
+                noScores.classList.remove('hidden');
+                return;
+            }
+            
+            noScores.classList.add('hidden');
+            
+            // Sort scores by level and chapter
+            const sortedEntries = Object.entries(bestScores).sort((a, b) => {
+                return a[0].localeCompare(b[0]);
+            });
+            
+            const html = sortedEntries.map(([key, score]) => {
+                const parts = key.split('_');
+                const level = parts[0];
+                const chapter = parts[1];
+                const mode = parts[2];
+                
+                let chapterText;
+                if (chapter === 'all') {
+                    chapterText = 'All Chapters';
+                } else if (level === 'Combined') {
+                    const chNum = parseInt(chapter);
+                    if (chNum <= 15) {
+                        chapterText = `HSK1 Ch${chNum}`;
+                    } else if (chNum <= 30) {
+                        chapterText = `HSK2 Ch${chNum - 15}`;
+                    } else {
+                        chapterText = `HSK3 Ch${chNum - 30}`;
+                    }
+                } else {
+                    chapterText = `Chapter ${chapter}`;
+                }
+                
+                const modeText = mode === 'charToPinyin' ? 'Char → Pinyin' : 'Pinyin → Char';
+                const scoreColor = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
+                
+                return `
+                    <div class="bg-white rounded-xl p-4 shadow-lg">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-sm font-medium">${level}</span>
+                            <span class="${scoreColor} text-2xl font-bold">${score}%</span>
+                        </div>
+                        <p class="text-gray-800 font-medium">${chapterText}</p>
+                        <p class="text-gray-500 text-sm">${modeText}</p>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+
+        // Initialize
+        showHome();
+    </script>
 </body>
 </html>
