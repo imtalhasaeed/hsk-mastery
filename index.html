@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HSK Vocabulary Master</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
@@ -14,150 +15,295 @@
         .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
         .fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .pulse-btn { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); } 50% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); } }
         .correct-answer { animation: correctPulse 0.5s ease; }
         @keyframes correctPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .shake { animation: shake 0.5s ease; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
         .progress-bar { transition: width 0.5s ease; }
-        .chapter-grid::-webkit-scrollbar { height: 8px; }
-        .chapter-grid::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        .chapter-grid::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 10px; }
+        
+        /* Writing pad styles */
+        .writing-canvas {
+            touch-action: none;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fafafa;
+            cursor: crosshair;
+        }
+        .writing-canvas:hover {
+            border-color: #a5b4fc;
+        }
+        
+        /* Blur effect for options */
+        .options-blur {
+            filter: blur(8px);
+            pointer-events: none;
+            user-select: none;
+            transition: filter 0.3s ease;
+        }
+        .options-blur.revealed {
+            filter: blur(0);
+            pointer-events: auto;
+        }
+        
+        /* Countdown timer */
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.8);
+            border-radius: 12px;
+            z-index: 10;
+        }
+        .countdown-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            animation: countdownPulse 1s ease infinite;
+        }
+        @keyframes countdownPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+        
+        /* Compact quiz screen */
+        .quiz-container {
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+        
+        /* Auto-advance indicator */
+        .auto-advance-bar {
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            animation: shrinkBar 1.5s linear forwards;
+        }
+        @keyframes shrinkBar {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Header -->
-    <header class="gradient-bg text-white py-4 px-6 shadow-lg sticky top-0 z-50">
+    <header class="gradient-bg text-white py-2 px-4 shadow-lg sticky top-0 z-50">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold cursor-pointer flex items-center gap-2" onclick="showHome()">
-                <span class="text-3xl">🈶</span> HSK Vocabulary Master
+            <h1 class="text-lg font-bold cursor-pointer flex items-center gap-2" onclick="showHome()">
+                <span class="text-xl">🈶</span> HSK Master
             </h1>
-            <button onclick="showScores()" class="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition">
-                <span>🏆</span> Best Scores
+            <button onclick="showScores()" class="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition text-sm">
+                <span>🏆</span> Scores
             </button>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main id="app" class="max-w-6xl mx-auto p-6">
+    <main id="app" class="max-w-6xl mx-auto p-3">
         <!-- Home Screen -->
         <div id="home-screen" class="fade-in">
-            <div class="text-center mb-12 mt-8">
-                <h2 class="text-4xl font-bold text-gray-800 mb-4">Master Your Chinese Vocabulary</h2>
-                <p class="text-xl text-gray-600">Based on HSK Standard Course Textbooks</p>
+            <div class="text-center mb-6 mt-2">
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">Master Your Chinese Vocabulary</h2>
+                <p class="text-gray-600">Based on HSK Standard Course Textbooks</p>
             </div>
 
             <!-- HSK Level Cards -->
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <div onclick="selectLevel('HSK1')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500">
-                    <div class="text-5xl mb-4">📗</div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-2">HSK 1</h3>
-                    <p class="text-gray-600">Beginner Level</p>
-                    <p class="text-sm text-indigo-600 mt-2">15 Chapters • 157 words</p>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <div onclick="selectLevel('HSK1')" class="card-hover cursor-pointer bg-white rounded-2xl p-5 shadow-lg border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-3xl mb-2">📗</div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">HSK 1</h3>
+                    <p class="text-gray-600 text-sm">Beginner</p>
+                    <p class="text-xs text-indigo-600 mt-1">15 Chapters • 169 words</p>
                 </div>
-                <div onclick="selectLevel('HSK2')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500">
-                    <div class="text-5xl mb-4">📘</div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-2">HSK 2</h3>
-                    <p class="text-gray-600">Elementary Level</p>
-                    <p class="text-sm text-indigo-600 mt-2">15 Chapters • 180 words</p>
+                <div onclick="selectLevel('HSK2')" class="card-hover cursor-pointer bg-white rounded-2xl p-5 shadow-lg border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-3xl mb-2">📘</div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">HSK 2</h3>
+                    <p class="text-gray-600 text-sm">Elementary</p>
+                    <p class="text-xs text-indigo-600 mt-1">15 Chapters • 172 words</p>
                 </div>
-                <div onclick="selectLevel('HSK3')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500">
-                    <div class="text-5xl mb-4">📙</div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-2">HSK 3</h3>
-                    <p class="text-gray-600">Intermediate Level</p>
-                    <p class="text-sm text-indigo-600 mt-2">3 Chapters • 50 words</p>
+                <div onclick="selectLevel('HSK3')" class="card-hover cursor-pointer bg-white rounded-2xl p-5 shadow-lg border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-3xl mb-2">📙</div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">HSK 3</h3>
+                    <p class="text-gray-600 text-sm">Intermediate</p>
+                    <p class="text-xs text-indigo-600 mt-1">3 Chapters • 50 words</p>
                 </div>
-                <div onclick="selectLevel('Combined')" class="card-hover cursor-pointer bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-8 shadow-lg text-white">
-                    <div class="text-5xl mb-4">🎯</div>
-                    <h3 class="text-2xl font-bold mb-2">Combined</h3>
-                    <p class="text-white/80">All Levels Mixed</p>
-                    <p class="text-sm text-white/90 mt-2">387 words • 350 questions</p>
+                <div onclick="selectLevel('Combined')" class="card-hover cursor-pointer bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 shadow-lg text-white">
+                    <div class="text-3xl mb-2">🎯</div>
+                    <h3 class="text-lg font-bold mb-1">Combined</h3>
+                    <p class="text-white/80 text-sm">All Levels</p>
+                    <p class="text-xs text-white/90 mt-1">391 words</p>
                 </div>
             </div>
         </div>
 
         <!-- Chapter Selection Screen -->
         <div id="chapter-screen" class="hidden fade-in">
-            <button onclick="showHome()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <button onclick="showHome()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-3 font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 Back to Levels
             </button>
-            <div class="text-center mb-8">
-                <h2 id="level-title" class="text-3xl font-bold text-gray-800 mb-2">Select Chapter</h2>
-                <p class="text-gray-600">Choose which chapter to practice</p>
+            <div class="text-center mb-4">
+                <h2 id="level-title" class="text-xl font-bold text-gray-800 mb-1">Select Chapter</h2>
+                <p class="text-gray-600 text-sm">Choose which chapter to practice</p>
             </div>
-            <div id="chapter-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8"></div>
+            <div id="chapter-grid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2 mb-4"></div>
         </div>
 
         <!-- Mode Selection Screen -->
         <div id="mode-screen" class="hidden fade-in">
-            <button id="mode-back-btn" onclick="showChapters()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <button id="mode-back-btn" onclick="showChapters()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-3 font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 <span id="mode-back-text">Back to Chapters</span>
             </button>
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-800 mb-2">Select Test Mode</h2>
-                <p class="text-gray-600" id="mode-subtitle">HSK1 - Chapter 1</p>
+            <div class="text-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-1">Select Practice Mode</h2>
+                <p class="text-gray-600 text-sm" id="mode-subtitle">HSK1 - Chapter 1</p>
             </div>
-            <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <div onclick="startQuiz('charToPinyin')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500 text-center">
-                    <div class="text-6xl mb-4 chinese-text">汉</div>
-                    <div class="text-3xl mb-4">↓</div>
-                    <div class="text-2xl mb-4">hàn</div>
-                    <h3 class="text-xl font-bold text-gray-800">Characters → Pinyin</h3>
-                    <p class="text-gray-600 mt-2">See characters, guess the pinyin</p>
+            <div class="grid md:grid-cols-3 gap-3 max-w-3xl mx-auto">
+                <div onclick="startQuiz('charToPinyin')" class="card-hover cursor-pointer bg-white rounded-xl p-4 shadow-lg border-2 border-transparent hover:border-indigo-500 text-center">
+                    <div class="text-4xl mb-2 chinese-text">汉</div>
+                    <div class="text-xl mb-1">↓</div>
+                    <div class="text-lg mb-2">hàn</div>
+                    <h3 class="text-sm font-bold text-gray-800">Characters → Pinyin</h3>
+                    <p class="text-gray-600 text-xs mt-1">See characters, guess pinyin</p>
                 </div>
-                <div onclick="startQuiz('pinyinToChar')" class="card-hover cursor-pointer bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-indigo-500 text-center">
-                    <div class="text-4xl mb-4">hàn yǔ</div>
-                    <div class="text-3xl mb-4">↓</div>
-                    <div class="text-5xl mb-4 chinese-text">汉语</div>
-                    <h3 class="text-xl font-bold text-gray-800">Pinyin → Characters</h3>
-                    <p class="text-gray-600 mt-2">See pinyin, guess the characters</p>
+                <div onclick="startQuiz('pinyinToChar')" class="card-hover cursor-pointer bg-white rounded-xl p-4 shadow-lg border-2 border-transparent hover:border-indigo-500 text-center">
+                    <div class="text-2xl mb-2">hàn yǔ</div>
+                    <div class="text-xl mb-1">↓</div>
+                    <div class="text-3xl mb-2 chinese-text">汉语</div>
+                    <h3 class="text-sm font-bold text-gray-800">Pinyin → Characters</h3>
+                    <p class="text-gray-600 text-xs mt-1">See pinyin, guess characters</p>
+                </div>
+                <div onclick="startWritingMode()" class="card-hover cursor-pointer bg-gradient-to-br from-green-500 to-teal-600 rounded-xl p-4 shadow-lg text-white text-center">
+                    <div class="text-4xl mb-2">✍️</div>
+                    <div class="text-xl mb-1">练习</div>
+                    <div class="text-lg mb-2">Writing</div>
+                    <h3 class="text-sm font-bold">Writing Practice</h3>
+                    <p class="text-white/80 text-xs mt-1">Practice stroke order</p>
                 </div>
             </div>
         </div>
 
         <!-- Quiz Screen -->
         <div id="quiz-screen" class="hidden fade-in">
-            <div class="max-w-2xl mx-auto">
-                <button onclick="confirmQuit()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    Quit Quiz
-                </button>
+            <div class="max-w-lg mx-auto quiz-container">
+                <!-- Top Bar -->
+                <div class="flex items-center justify-between mb-2">
+                    <button onclick="confirmQuit()" class="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-medium">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        Quit
+                    </button>
+                    <span id="question-counter" class="text-xs text-gray-600">1 / 10</span>
+                    <span id="score-display" class="text-xs font-medium text-indigo-600">Score: 0</span>
+                </div>
                 
                 <!-- Progress Bar -->
-                <div class="bg-gray-200 rounded-full h-3 mb-6">
-                    <div id="progress-bar" class="progress-bar gradient-bg h-3 rounded-full" style="width: 0%"></div>
-                </div>
-                <div class="flex justify-between text-sm text-gray-600 mb-8">
-                    <span id="question-counter">Question 1 of 10</span>
-                    <span id="score-display">Score: 0</span>
+                <div class="bg-gray-200 rounded-full h-1.5 mb-2">
+                    <div id="progress-bar" class="progress-bar gradient-bg h-1.5 rounded-full" style="width: 0%"></div>
                 </div>
 
                 <!-- Question Card -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
-                    <div class="flex justify-between items-start mb-6">
-                        <span id="quiz-level-badge" class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">HSK1</span>
-                        <button onclick="pronounceWord()" class="text-2xl hover:scale-110 transition" title="Listen">🔊</button>
+                <div class="bg-white rounded-xl shadow-lg p-4 mb-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <span id="quiz-level-badge" class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-xs font-medium">HSK1</span>
+                        <button onclick="pronounceWord()" class="text-lg hover:scale-110 transition" title="Listen">🔊</button>
                     </div>
-                    <div id="question-display" class="text-center py-8">
-                        <div id="question-text" class="text-5xl font-bold chinese-text mb-4">你好</div>
+                    <div id="question-display" class="text-center py-2">
+                        <div id="question-text" class="text-4xl font-bold chinese-text">你好</div>
                     </div>
                     
                     <!-- Meaning (Hidden until answered) -->
-                    <div id="meaning-display" class="hidden text-center py-4 bg-gray-50 rounded-xl mt-4">
-                        <p class="text-gray-600 text-sm mb-1">Meaning:</p>
-                        <p id="word-meaning" class="text-xl font-medium text-gray-800">Hello</p>
+                    <div id="meaning-display" class="hidden text-center py-1.5 bg-gray-50 rounded-lg mt-2">
+                        <p class="text-gray-600 text-xs">Meaning:</p>
+                        <p id="word-meaning" class="text-sm font-medium text-gray-800">Hello</p>
+                    </div>
+                    
+                    <!-- Auto-advance indicator -->
+                    <div id="auto-advance-container" class="hidden mt-2">
+                        <div class="auto-advance-bar"></div>
                     </div>
                 </div>
 
                 <!-- Answer Options -->
-                <div id="options-container" class="grid grid-cols-2 gap-4 mb-6"></div>
+                <div id="options-wrapper" class="relative">
+                    <div id="options-container" class="grid grid-cols-2 gap-2 options-blur"></div>
+                    <div id="countdown-overlay" class="countdown-overlay">
+                        <span id="countdown-number" class="countdown-number">3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                <!-- Next Button -->
-                <button id="next-btn" onclick="nextQuestion()" class="hidden w-full gradient-bg text-white py-4 rounded-xl font-semibold text-lg hover:opacity-90 transition">
-                    Next Question →
+        <!-- Writing Practice Screen -->
+        <div id="writing-screen" class="hidden fade-in">
+            <div class="max-w-lg mx-auto">
+                <!-- Top Bar -->
+                <div class="flex items-center justify-between mb-2">
+                    <button onclick="quitWriting()" class="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-medium">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        Back
+                    </button>
+                    <span id="writing-counter" class="text-xs text-gray-600">1 / 10</span>
+                    <button onclick="nextWritingWord()" class="text-xs font-medium text-indigo-600 hover:text-indigo-800">
+                        Skip →
+                    </button>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="bg-gray-200 rounded-full h-1.5 mb-3">
+                    <div id="writing-progress-bar" class="progress-bar gradient-bg h-1.5 rounded-full" style="width: 0%"></div>
+                </div>
+
+                <!-- Writing Card -->
+                <div class="bg-white rounded-xl shadow-lg p-4 mb-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span id="writing-level-badge" class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-medium">HSK1</span>
+                        <button onclick="pronounceWritingWord()" class="text-lg hover:scale-110 transition" title="Listen">🔊</button>
+                    </div>
+                    
+                    <!-- Word to write -->
+                    <div class="text-center mb-3">
+                        <p class="text-gray-500 text-xs mb-1">Write this character:</p>
+                        <div id="writing-pinyin" class="text-xl font-medium text-indigo-600 mb-1">nǐ hǎo</div>
+                        <div id="writing-meaning" class="text-sm text-gray-600">hello</div>
+                    </div>
+                    
+                    <!-- Character info -->
+                    <div class="text-center mb-2">
+                        <span class="text-xs text-gray-500">Character <span id="current-char-num">1</span> of <span id="total-chars">1</span></span>
+                        <span id="target-char-display" class="ml-2 text-2xl chinese-text font-bold text-indigo-600"></span>
+                    </div>
+                    
+                    <!-- Writing area -->
+                    <div class="flex justify-center mb-3">
+                        <div id="hanzi-writer-container" class="writing-canvas" style="width: 200px; height: 200px;"></div>
+                    </div>
+                    
+                    <!-- Writing controls -->
+                    <div class="flex justify-center gap-2">
+                        <button onclick="showHint()" class="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium hover:bg-yellow-200 transition">
+                            💡 Hint
+                        </button>
+                        <button onclick="clearWriting()" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition">
+                            🗑️ Clear
+                        </button>
+                        <button onclick="animateCharacter()" class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition">
+                            ▶️ Show
+                        </button>
+                    </div>
+                    
+                    <!-- Feedback -->
+                    <div id="writing-feedback" class="hidden mt-3 text-center py-2 rounded-lg">
+                        <p id="feedback-text" class="text-sm font-medium"></p>
+                    </div>
+                </div>
+                
+                <!-- Next button -->
+                <button onclick="nextWritingWord()" class="w-full gradient-bg text-white py-2.5 rounded-xl font-semibold hover:opacity-90 transition text-sm">
+                    Next Word →
                 </button>
             </div>
         </div>
@@ -165,21 +311,21 @@
         <!-- Results Screen -->
         <div id="results-screen" class="hidden fade-in">
             <div class="max-w-lg mx-auto text-center">
-                <div id="results-emoji" class="text-8xl mb-6">🎉</div>
-                <h2 class="text-3xl font-bold text-gray-800 mb-4">Quiz Complete!</h2>
-                <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
-                    <div class="text-6xl font-bold gradient-bg bg-clip-text text-transparent mb-2" id="final-score">80%</div>
-                    <p class="text-gray-600 mb-4" id="score-text">You got 8 out of 10 correct!</p>
-                    <div id="new-best" class="hidden bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg font-medium mb-4">
+                <div id="results-emoji" class="text-6xl mb-3">🎉</div>
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
+                <div class="bg-white rounded-2xl shadow-lg p-5 mb-4">
+                    <div class="text-4xl font-bold gradient-bg bg-clip-text text-transparent mb-2" id="final-score">80%</div>
+                    <p class="text-gray-600 mb-2 text-sm" id="score-text">You got 8 out of 10 correct!</p>
+                    <div id="new-best" class="hidden bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg font-medium mb-2 text-sm">
                         🏆 New Best Score!
                     </div>
-                    <p class="text-sm text-gray-500" id="best-score-display">Best score for this section: 80%</p>
+                    <p class="text-xs text-gray-500" id="best-score-display">Best score for this section: 80%</p>
                 </div>
-                <div class="flex gap-4">
-                    <button onclick="restartQuiz()" class="flex-1 gradient-bg text-white py-4 rounded-xl font-semibold hover:opacity-90 transition">
+                <div class="flex gap-3">
+                    <button onclick="restartQuiz()" class="flex-1 gradient-bg text-white py-2.5 rounded-xl font-semibold hover:opacity-90 transition text-sm">
                         Try Again
                     </button>
-                    <button onclick="showHome()" class="flex-1 bg-gray-200 text-gray-800 py-4 rounded-xl font-semibold hover:bg-gray-300 transition">
+                    <button onclick="showHome()" class="flex-1 bg-gray-200 text-gray-800 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition text-sm">
                         Home
                     </button>
                 </div>
@@ -188,33 +334,33 @@
 
         <!-- Scores Screen -->
         <div id="scores-screen" class="hidden fade-in">
-            <button onclick="showHome()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-6 font-medium">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <button onclick="showHome()" class="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 mb-3 font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 Back to Home
             </button>
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-800 mb-2">🏆 Best Scores</h2>
-                <p class="text-gray-600">Your personal records</p>
+            <div class="text-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-1">🏆 Best Scores</h2>
+                <p class="text-gray-600 text-sm">Your personal records</p>
             </div>
-            <div id="scores-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-            <div id="no-scores" class="hidden text-center py-12">
-                <div class="text-6xl mb-4">📝</div>
-                <p class="text-gray-600">No scores yet. Start a quiz to track your progress!</p>
+            <div id="scores-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+            <div id="no-scores" class="hidden text-center py-6">
+                <div class="text-4xl mb-2">📝</div>
+                <p class="text-gray-600 text-sm">No scores yet. Start a quiz to track your progress!</p>
             </div>
         </div>
     </main>
 
     <!-- Quit Confirmation Modal -->
     <div id="quit-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-2xl p-8 max-w-sm mx-4 text-center">
-            <div class="text-5xl mb-4">⚠️</div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">Quit Quiz?</h3>
-            <p class="text-gray-600 mb-6">Your progress will be lost.</p>
-            <div class="flex gap-4">
-                <button onclick="closeQuitModal()" class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold hover:bg-gray-300 transition">
+        <div class="bg-white rounded-2xl p-5 max-w-sm mx-4 text-center">
+            <div class="text-3xl mb-2">⚠️</div>
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Quit Quiz?</h3>
+            <p class="text-gray-600 text-sm mb-3">Your progress will be lost.</p>
+            <div class="flex gap-3">
+                <button onclick="closeQuitModal()" class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-xl font-semibold hover:bg-gray-300 transition text-sm">
                     Continue
                 </button>
-                <button onclick="quitQuiz()" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition">
+                <button onclick="quitQuiz()" class="flex-1 bg-red-500 text-white py-2 rounded-xl font-semibold hover:bg-red-600 transition text-sm">
                     Quit
                 </button>
             </div>
@@ -222,7 +368,7 @@
     </div>
 
     <script>
-        // HSK Standard Course Vocabulary - Official Textbook Content
+        // HSK Standard Course Vocabulary
         const vocabulary = {
             HSK1: {
                 1: [
@@ -325,16 +471,19 @@
                 9: [
                     { char: "小", pinyin: "xiǎo", meaning: "small" },
                     { char: "猫", pinyin: "māo", meaning: "cat" },
-                    { char: "在", pinyin: "zài", meaning: "to be at (location)" },
+                    { char: "在", pinyin: "zài", meaning: "to be at; at" },
                     { char: "哪儿", pinyin: "nǎr", meaning: "where" },
+                    { char: "那儿", pinyin: "nàr", meaning: "there" },
                     { char: "狗", pinyin: "gǒu", meaning: "dog" },
                     { char: "椅子", pinyin: "yǐzi", meaning: "chair" },
+                    { char: "下", pinyin: "xià", meaning: "down; under" },
                     { char: "下面", pinyin: "xiàmiàn", meaning: "under; below" },
                     { char: "工作", pinyin: "gōngzuò", meaning: "job; to work" },
                     { char: "儿子", pinyin: "érzi", meaning: "son" },
                     { char: "医院", pinyin: "yīyuàn", meaning: "hospital" },
                     { char: "医生", pinyin: "yīshēng", meaning: "doctor" },
-                    { char: "爸爸", pinyin: "bàba", meaning: "father" }
+                    { char: "爸爸", pinyin: "bàba", meaning: "father" },
+                    { char: "他们", pinyin: "tāmen", meaning: "they; them" }
                 ],
                 10: [
                     { char: "桌子", pinyin: "zhuōzi", meaning: "desk; table" },
@@ -389,7 +538,9 @@
                     { char: "喜欢", pinyin: "xǐhuan", meaning: "to like" },
                     { char: "给", pinyin: "gěi", meaning: "to; for; to give" },
                     { char: "打电话", pinyin: "dǎ diànhuà", meaning: "to make a phone call" },
-                    { char: "吧", pinyin: "ba", meaning: "suggestion particle" }
+                    { char: "吧", pinyin: "ba", meaning: "suggestion particle" },
+                    { char: "晚上", pinyin: "wǎnshang", meaning: "evening" },
+                    { char: "早上", pinyin: "zǎoshang", meaning: "early morning" }
                 ],
                 14: [
                     { char: "东西", pinyin: "dōngxi", meaning: "thing; stuff" },
@@ -687,14 +838,6 @@
             }
         };
 
-        // Question limits for "all" mode
-        const allModeLimits = {
-            HSK1: 150,
-            HSK2: 150,
-            HSK3: 50,
-            Combined: 350
-        };
-
         // State
         let currentLevel = '';
         let currentChapter = '';
@@ -704,6 +847,13 @@
         let score = 0;
         let answered = false;
         let currentWord = null;
+        let hanziWriter = null;
+        let currentCharIndex = 0;
+        let totalChars = 1;
+        let autoAdvanceTimer = null;
+        let countdownTimer = null;
+        let writingWords = [];
+        let writingIndex = 0;
 
         // Get chapter count for each level
         function getChapterCount(level) {
@@ -728,7 +878,6 @@
                 return getAllVocab(level);
             }
             if (level === 'Combined') {
-                // For combined, chapter numbers map across all levels
                 if (chapter <= 15) {
                     return vocabulary.HSK1[chapter] || [];
                 } else if (chapter <= 30) {
@@ -743,6 +892,18 @@
         // Show/Hide screens
         function hideAllScreens() {
             document.querySelectorAll('#app > div').forEach(el => el.classList.add('hidden'));
+            clearTimers();
+        }
+
+        function clearTimers() {
+            if (autoAdvanceTimer) {
+                clearTimeout(autoAdvanceTimer);
+                autoAdvanceTimer = null;
+            }
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
         }
 
         function showHome() {
@@ -753,13 +914,11 @@
         function selectLevel(level) {
             currentLevel = level;
             
-            // For Combined, skip chapter selection and go directly to mode selection
             if (level === 'Combined') {
                 currentChapter = 'all';
                 hideAllScreens();
                 document.getElementById('mode-screen').classList.remove('hidden');
                 document.getElementById('mode-subtitle').textContent = 'Combined - All HSK Levels';
-                // Update back button to go to home instead of chapters
                 document.getElementById('mode-back-btn').onclick = showHome;
                 document.getElementById('mode-back-text').textContent = 'Back to Levels';
                 return;
@@ -775,31 +934,28 @@
             const grid = document.getElementById('chapter-grid');
             let html = '';
             
-            // Render chapters for the selected level (Combined is handled in selectLevel)
             const chapters = getChapterCount(level);
             for (let i = 1; i <= chapters; i++) {
                 const wordCount = vocabulary[level][i]?.length || 0;
-                html += createChapterCard(i, `Chapter ${i}`, wordCount);
+                html += createChapterCard(i, `Ch ${i}`, wordCount);
             }
             
             const totalWords = getAllVocab(level).length;
-            const questionLimit = allModeLimits[level];
             html += `
-                <div onclick="selectChapter('all')" class="card-hover cursor-pointer bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 shadow-lg text-center text-white col-span-2 sm:col-span-1">
-                    <div class="text-2xl font-bold mb-1">📚</div>
-                    <p class="text-sm font-medium">All Chapters</p>
-                    <p class="text-xs text-white/70">${totalWords} words • ${questionLimit} questions</p>
+                <div onclick="selectChapter('all')" class="card-hover cursor-pointer bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-2 shadow-lg text-center text-white">
+                    <div class="text-base font-bold mb-0.5">📚</div>
+                    <p class="text-xs font-medium">All</p>
+                    <p class="text-xs text-white/70">${totalWords} words</p>
                 </div>
             `;
             
             grid.innerHTML = html;
         }
 
-        function createChapterCard(chapterNum, displayText, wordCount, sublevel = '') {
+        function createChapterCard(chapterNum, displayText, wordCount) {
             return `
-                <div onclick="selectChapter(${chapterNum})" class="card-hover cursor-pointer bg-white rounded-xl p-4 shadow-lg text-center border-2 border-transparent hover:border-indigo-500">
-                    <div class="text-xl font-bold text-indigo-600 mb-1">${displayText}</div>
-                    ${sublevel ? `<p class="text-xs text-gray-400">${sublevel}</p>` : ''}
+                <div onclick="selectChapter(${chapterNum})" class="card-hover cursor-pointer bg-white rounded-xl p-2 shadow-lg text-center border-2 border-transparent hover:border-indigo-500">
+                    <div class="text-base font-bold text-indigo-600 mb-0.5">${displayText}</div>
                     <p class="text-xs text-gray-500">${wordCount} words</p>
                 </div>
             `;
@@ -810,16 +966,10 @@
             hideAllScreens();
             document.getElementById('mode-screen').classList.remove('hidden');
             
-            // Reset back button for non-combined levels
             document.getElementById('mode-back-btn').onclick = showChapters;
             document.getElementById('mode-back-text').textContent = 'Back to Chapters';
             
-            let chapterText;
-            if (chapter === 'all') {
-                chapterText = 'All Chapters';
-            } else {
-                chapterText = `Chapter ${chapter}`;
-            }
+            let chapterText = chapter === 'all' ? 'All Chapters' : `Chapter ${chapter}`;
             document.getElementById('mode-subtitle').textContent = `${currentLevel} - ${chapterText}`;
         }
 
@@ -831,58 +981,31 @@
         // Generate quiz questions
         function generateQuestions(vocabList, mode) {
             const shuffled = [...vocabList].sort(() => Math.random() - 0.5);
-            
-            // Determine question count based on context
-            let questionCount;
-            if (currentChapter === 'all') {
-                questionCount = Math.min(allModeLimits[currentLevel], shuffled.length);
-            } else {
-                questionCount = shuffled.length; // Use all words in the chapter
-            }
-            
-            const selected = shuffled.slice(0, questionCount);
-            
-            return selected.map(word => {
+            return shuffled.map(word => {
                 const options = generateOptions(word, vocabList, mode);
                 return { word, options, mode };
             });
         }
 
-        // Get the full word pool for generating options (uses entire level's vocabulary)
         function getOptionsPool(level) {
             if (level === 'Combined') {
                 return [...Object.values(vocabulary.HSK1).flat(),
                         ...Object.values(vocabulary.HSK2).flat(),
                         ...Object.values(vocabulary.HSK3).flat()];
             }
-            // For combined chapter selections, determine the actual HSK level
-            if (currentChapter !== 'all' && level === 'Combined') {
-                if (currentChapter <= 15) {
-                    return Object.values(vocabulary.HSK1).flat();
-                } else if (currentChapter <= 30) {
-                    return Object.values(vocabulary.HSK2).flat();
-                } else {
-                    return Object.values(vocabulary.HSK3).flat();
-                }
-            }
             return Object.values(vocabulary[level]).flat();
         }
 
         function generateOptions(correctWord, chapterWords, mode) {
             const correctAnswer = mode === 'charToPinyin' ? correctWord.pinyin : correctWord.char;
-            
-            // Get a larger pool of words for options (entire level)
             let optionsPool = getOptionsPool(currentLevel);
             
-            // Filter out the correct word and get unique options
             const otherWords = optionsPool.filter(w => {
                 const answer = mode === 'charToPinyin' ? w.pinyin : w.char;
                 return answer !== correctAnswer;
             });
             
-            // Shuffle and pick 3 wrong answers
             const shuffledOthers = otherWords.sort(() => Math.random() - 0.5).slice(0, 3);
-            
             const options = [
                 correctAnswer,
                 ...shuffledOthers.map(w => mode === 'charToPinyin' ? w.pinyin : w.char)
@@ -896,9 +1019,8 @@
             currentMode = mode;
             const vocab = getChapterVocab(currentLevel, currentChapter);
             
-            // Check if there are any words
             if (vocab.length === 0) {
-                alert('No words found in this chapter. Please select a different chapter.');
+                alert('No words found. Please select a different chapter.');
                 return;
             }
             
@@ -914,7 +1036,233 @@
             showQuestion();
         }
 
+        // Start Writing Mode
+        function startWritingMode() {
+            const vocab = getChapterVocab(currentLevel, currentChapter);
+            
+            if (vocab.length === 0) {
+                alert('No words found. Please select a different chapter.');
+                return;
+            }
+            
+            writingWords = [...vocab].sort(() => Math.random() - 0.5);
+            writingIndex = 0;
+            
+            hideAllScreens();
+            document.getElementById('writing-screen').classList.remove('hidden');
+            document.getElementById('writing-level-badge').textContent = currentLevel;
+            
+            showWritingWord();
+        }
+
+        function showWritingWord() {
+            if (writingIndex >= writingWords.length) {
+                writingIndex = 0; // Loop back
+            }
+            
+            const word = writingWords[writingIndex];
+            currentWord = word;
+            currentCharIndex = 0;
+            totalChars = word.char.length;
+            
+            // Update progress
+            const progress = (writingIndex / writingWords.length) * 100;
+            document.getElementById('writing-progress-bar').style.width = `${progress}%`;
+            document.getElementById('writing-counter').textContent = `${writingIndex + 1} / ${writingWords.length}`;
+            
+            // Update word display
+            document.getElementById('writing-pinyin').textContent = word.pinyin;
+            document.getElementById('writing-meaning').textContent = word.meaning;
+            document.getElementById('total-chars').textContent = totalChars;
+            
+            updateCharIndicator();
+            setupHanziWriter();
+        }
+
+        function nextWritingWord() {
+            writingIndex++;
+            showWritingWord();
+        }
+
+        function quitWriting() {
+            if (currentLevel === 'Combined') {
+                showHome();
+            } else {
+                hideAllScreens();
+                document.getElementById('mode-screen').classList.remove('hidden');
+            }
+        }
+
+        function pronounceWritingWord() {
+            if (!currentWord) return;
+            // Cancel any ongoing speech immediately
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(currentWord.char);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 1.0; // Faster rate
+            
+            // Use pre-loaded voice if available
+            if (chineseVoice) {
+                utterance.voice = chineseVoice;
+            }
+            
+            // Speak immediately
+            speechSynthesis.speak(utterance);
+        }
+
+        function updateCharIndicator() {
+            const chars = currentWord.char;
+            document.getElementById('current-char-num').textContent = currentCharIndex + 1;
+            document.getElementById('target-char-display').textContent = chars[currentCharIndex];
+        }
+
+        function setupHanziWriter() {
+            const container = document.getElementById('hanzi-writer-container');
+            container.innerHTML = '';
+            
+            const targetChar = currentWord.char[currentCharIndex];
+            document.getElementById('writing-feedback').classList.add('hidden');
+            
+            try {
+                hanziWriter = HanziWriter.create(container, targetChar, {
+                    width: 200,
+                    height: 200,
+                    padding: 5,
+                    showOutline: false,
+                    showCharacter: false,
+                    strokeAnimationSpeed: 1,
+                    delayBetweenStrokes: 100,
+                    strokeColor: '#4F46E5',
+                    outlineColor: '#DDD',
+                    drawingColor: '#333',
+                    drawingWidth: 4,
+                    showHintAfterMisses: 3,
+                    highlightOnComplete: true,
+                    highlightColor: '#10B981',
+                    charDataLoader: function(char, onComplete) {
+                        fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${char}.json`)
+                            .then(response => response.json())
+                            .then(data => onComplete(data))
+                            .catch(() => {
+                                showWritingFeedback('Character data not available for: ' + char, false);
+                            });
+                    }
+                });
+                
+                hanziWriter.quiz({
+                    onMistake: function(strokeData) {
+                        showWritingFeedback('Try again! Follow the stroke order.', false);
+                    },
+                    onCorrectStroke: function(strokeData) {
+                        document.getElementById('writing-feedback').classList.add('hidden');
+                    },
+                    onComplete: function(summaryData) {
+                        if (currentCharIndex < totalChars - 1) {
+                            showWritingFeedback('✓ Correct! Next character...', true);
+                            setTimeout(() => {
+                                currentCharIndex++;
+                                updateCharIndicator();
+                                setupHanziWriter();
+                            }, 800);
+                        } else {
+                            showWritingFeedback('🎉 Perfect! All characters completed!', true);
+                            pronounceWritingWord();
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('Error creating HanziWriter:', e);
+                showWritingFeedback('Writing practice unavailable.', false);
+            }
+        }
+
+        function showWritingFeedback(message, isSuccess) {
+            const feedback = document.getElementById('writing-feedback');
+            const text = document.getElementById('feedback-text');
+            
+            feedback.classList.remove('hidden', 'bg-green-100', 'bg-red-100', 'text-green-700', 'text-red-700');
+            feedback.classList.add(isSuccess ? 'bg-green-100' : 'bg-red-100');
+            feedback.classList.add(isSuccess ? 'text-green-700' : 'text-red-700');
+            text.textContent = message;
+        }
+
+        function showHint() {
+            if (hanziWriter) {
+                hanziWriter.showOutline();
+                hanziWriter.showHint();
+            }
+        }
+
+        function clearWriting() {
+            if (hanziWriter) {
+                currentCharIndex = 0;
+                updateCharIndicator();
+                setupHanziWriter();
+            }
+        }
+
+        function animateCharacter() {
+            if (hanziWriter) {
+                hanziWriter.cancelQuiz();
+                hanziWriter.showCharacter();
+                hanziWriter.animateCharacter({
+                    onComplete: function() {
+                        setTimeout(() => {
+                            hanziWriter.hideCharacter();
+                            hanziWriter.quiz({
+                                onMistake: function(strokeData) {
+                                    showWritingFeedback('Try again! Follow the stroke order.', false);
+                                },
+                                onCorrectStroke: function(strokeData) {
+                                    document.getElementById('writing-feedback').classList.add('hidden');
+                                },
+                                onComplete: function(summaryData) {
+                                    if (currentCharIndex < totalChars - 1) {
+                                        showWritingFeedback('✓ Correct! Next character...', true);
+                                        setTimeout(() => {
+                                            currentCharIndex++;
+                                            updateCharIndicator();
+                                            setupHanziWriter();
+                                        }, 800);
+                                    } else {
+                                        showWritingFeedback('🎉 Perfect! All characters completed!', true);
+                                        pronounceWritingWord();
+                                    }
+                                }
+                            });
+                        }, 500);
+                    }
+                });
+            }
+        }
+
+        function startCountdown() {
+            let count = 3;
+            const overlay = document.getElementById('countdown-overlay');
+            const countdownNum = document.getElementById('countdown-number');
+            
+            overlay.style.display = 'flex';
+            countdownNum.textContent = count;
+            
+            countdownTimer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownNum.textContent = count;
+                } else {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                    
+                    overlay.style.display = 'none';
+                    document.getElementById('options-container').classList.remove('options-blur');
+                    document.getElementById('options-container').classList.add('revealed');
+                }
+            }, 1000);
+        }
+
         function showQuestion() {
+            clearTimers();
+            
             const question = currentQuestions[currentQuestionIndex];
             currentWord = question.word;
             answered = false;
@@ -922,39 +1270,46 @@
             // Update progress
             const progress = ((currentQuestionIndex) / currentQuestions.length) * 100;
             document.getElementById('progress-bar').style.width = `${progress}%`;
-            document.getElementById('question-counter').textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}`;
+            document.getElementById('question-counter').textContent = `${currentQuestionIndex + 1} / ${currentQuestions.length}`;
             document.getElementById('score-display').textContent = `Score: ${score}`;
             
             // Display question
             const questionText = document.getElementById('question-text');
             if (currentMode === 'charToPinyin') {
                 questionText.textContent = question.word.char;
-                questionText.className = 'text-5xl font-bold chinese-text mb-4';
+                questionText.className = 'text-4xl font-bold chinese-text';
             } else {
                 questionText.textContent = question.word.pinyin;
-                questionText.className = 'text-4xl font-bold mb-4';
+                questionText.className = 'text-3xl font-bold';
             }
             
-            // Hide meaning
+            // Hide meaning and auto-advance
             document.getElementById('meaning-display').classList.add('hidden');
+            document.getElementById('auto-advance-container').classList.add('hidden');
             document.getElementById('word-meaning').textContent = question.word.meaning;
             
-            // Hide next button
-            document.getElementById('next-btn').classList.add('hidden');
-            
-            // Render options
-            const container = document.getElementById('options-container');
-            container.innerHTML = question.options.map((option, index) => `
+            // Render options with blur
+            const optionsHtml = question.options.map((option, index) => `
                 <button onclick="selectAnswer('${option.replace(/'/g, "\\'")}')" 
-                    class="option-btn bg-white border-2 border-gray-200 rounded-xl p-4 text-lg font-medium hover:border-indigo-500 hover:bg-indigo-50 transition ${currentMode === 'pinyinToChar' ? 'chinese-text text-2xl' : ''}">
+                    class="option-btn bg-white border-2 border-gray-200 rounded-lg p-2.5 text-sm font-medium hover:border-indigo-500 hover:bg-indigo-50 transition ${currentMode === 'pinyinToChar' ? 'chinese-text text-lg' : ''}">
                     ${option}
                 </button>
             `).join('');
+            
+            // Set options with blur effect
+            document.getElementById('options-container').innerHTML = optionsHtml;
+            document.getElementById('options-container').classList.add('options-blur');
+            document.getElementById('options-container').classList.remove('revealed');
+            
+            // Start countdown
+            startCountdown();
         }
 
         function selectAnswer(selected) {
             if (answered) return;
             answered = true;
+            
+            clearTimers();
             
             const question = currentQuestions[currentQuestionIndex];
             const correct = currentMode === 'charToPinyin' ? question.word.pinyin : question.word.char;
@@ -966,7 +1321,7 @@
             }
             
             // Highlight answers
-            document.querySelectorAll('.option-btn').forEach(btn => {
+            document.querySelectorAll('#options-container .option-btn').forEach(btn => {
                 const btnText = btn.textContent.trim();
                 if (btnText === correct) {
                     btn.classList.remove('border-gray-200', 'hover:border-indigo-500', 'hover:bg-indigo-50');
@@ -981,21 +1336,20 @@
             // Show meaning
             document.getElementById('meaning-display').classList.remove('hidden');
             
-            // Pronounce the word after answer is selected
+            // Pronounce the word
             pronounceWord();
             
-            // Show next button
-            document.getElementById('next-btn').classList.remove('hidden');
+            // Show auto-advance indicator
+            document.getElementById('auto-advance-container').classList.remove('hidden');
             
-            // Update next button text
-            if (currentQuestionIndex === currentQuestions.length - 1) {
-                document.getElementById('next-btn').textContent = 'See Results →';
-            } else {
-                document.getElementById('next-btn').textContent = 'Next Question →';
-            }
+            // Auto-advance after 1.5 seconds
+            autoAdvanceTimer = setTimeout(() => {
+                nextQuestion();
+            }, 1500);
         }
 
         function nextQuestion() {
+            clearTimers();
             currentQuestionIndex++;
             if (currentQuestionIndex >= currentQuestions.length) {
                 showResults();
@@ -1012,14 +1366,12 @@
             document.getElementById('final-score').textContent = `${percentage}%`;
             document.getElementById('score-text').textContent = `You got ${score} out of ${currentQuestions.length} correct!`;
             
-            // Set emoji based on score
             let emoji = '🎉';
             if (percentage < 50) emoji = '😢';
             else if (percentage < 70) emoji = '😊';
             else if (percentage < 90) emoji = '🎊';
             document.getElementById('results-emoji').textContent = emoji;
             
-            // Save and check best score
             const scoreKey = `${currentLevel}_${currentChapter}_${currentMode}`;
             const bestScores = JSON.parse(localStorage.getItem('hskBestScores') || '{}');
             const previousBest = bestScores[scoreKey] || 0;
@@ -1040,18 +1392,39 @@
             startQuiz(currentMode);
         }
 
-        // Pronunciation - only called when user clicks answer or speaker button
+        // Pre-load Chinese voice for faster pronunciation
+        let chineseVoice = null;
+        function preloadVoices() {
+            const voices = speechSynthesis.getVoices();
+            chineseVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('CN')) || null;
+        }
+        
+        // Load voices when available
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = preloadVoices;
+        }
+        preloadVoices();
+
         function pronounceWord() {
             if (!currentWord) return;
+            // Cancel any ongoing speech immediately
+            speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(currentWord.char);
             utterance.lang = 'zh-CN';
-            utterance.rate = 0.8;
+            utterance.rate = 1.0; // Faster rate
+            
+            // Use pre-loaded voice if available
+            if (chineseVoice) {
+                utterance.voice = chineseVoice;
+            }
+            
+            // Speak immediately
             speechSynthesis.speak(utterance);
         }
 
-        // Quit quiz confirmation
         function confirmQuit() {
+            clearTimers();
             document.getElementById('quit-modal').classList.remove('hidden');
         }
 
@@ -1061,10 +1434,14 @@
 
         function quitQuiz() {
             closeQuitModal();
-            showChapters();
+            if (currentLevel === 'Combined') {
+                showHome();
+            } else {
+                hideAllScreens();
+                document.getElementById('mode-screen').classList.remove('hidden');
+            }
         }
 
-        // Scores screen
         function showScores() {
             hideAllScreens();
             document.getElementById('scores-screen').classList.remove('hidden');
@@ -1081,10 +1458,7 @@
             
             noScores.classList.add('hidden');
             
-            // Sort scores by level and chapter
-            const sortedEntries = Object.entries(bestScores).sort((a, b) => {
-                return a[0].localeCompare(b[0]);
-            });
+            const sortedEntries = Object.entries(bestScores).sort((a, b) => a[0].localeCompare(b[0]));
             
             const html = sortedEntries.map(([key, score]) => {
                 const parts = key.split('_');
@@ -1097,13 +1471,9 @@
                     chapterText = 'All Chapters';
                 } else if (level === 'Combined') {
                     const chNum = parseInt(chapter);
-                    if (chNum <= 15) {
-                        chapterText = `HSK1 Ch${chNum}`;
-                    } else if (chNum <= 30) {
-                        chapterText = `HSK2 Ch${chNum - 15}`;
-                    } else {
-                        chapterText = `HSK3 Ch${chNum - 30}`;
-                    }
+                    if (chNum <= 15) chapterText = `HSK1 Ch${chNum}`;
+                    else if (chNum <= 30) chapterText = `HSK2 Ch${chNum - 15}`;
+                    else chapterText = `HSK3 Ch${chNum - 30}`;
                 } else {
                     chapterText = `Chapter ${chapter}`;
                 }
@@ -1112,13 +1482,13 @@
                 const scoreColor = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
                 
                 return `
-                    <div class="bg-white rounded-xl p-4 shadow-lg">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-sm font-medium">${level}</span>
-                            <span class="${scoreColor} text-2xl font-bold">${score}%</span>
+                    <div class="bg-white rounded-xl p-3 shadow-lg">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs font-medium">${level}</span>
+                            <span class="${scoreColor} text-xl font-bold">${score}%</span>
                         </div>
-                        <p class="text-gray-800 font-medium">${chapterText}</p>
-                        <p class="text-gray-500 text-sm">${modeText}</p>
+                        <p class="text-gray-800 font-medium text-sm">${chapterText}</p>
+                        <p class="text-gray-500 text-xs">${modeText}</p>
                     </div>
                 `;
             }).join('');
